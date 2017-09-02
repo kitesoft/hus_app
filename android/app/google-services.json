@@ -1,0 +1,86 @@
+{
+  "project_info": {
+    "project_number": "659403403724",
+    "firebase_url": "https://husapp-23efa.firebaseio.com",
+    "project_id": "husapp-23efa",
+    "storage_bucket": "husapp-23efa.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659403403724:android:50c25edd76f2d43f",
+        "android_client_info": {
+          "package_name": "de.humboldtschule_hg.app.sv"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "659403403724-0t8k1ogesq6qrv57aemu07vpj5ev0vbk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP4_ihb3Det6vclG6cHyz2dHqqz-CF5lg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659403403724:android:c1ea3e51354c5620",
+        "android_client_info": {
+          "package_name": "de.humboldtschule_hg.app.ng"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "659403403724-58s5011o5ecruer27472qgpjjp7l3o2q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.humboldtschule_hg.app.ng",
+            "certificate_hash": "caa1746a67ddbdf2d9ae11c696c84dfa3000b9f5"
+          }
+        },
+        {
+          "client_id": "659403403724-0t8k1ogesq6qrv57aemu07vpj5ev0vbk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP4_ihb3Det6vclG6cHyz2dHqqz-CF5lg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "659403403724-0t8k1ogesq6qrv57aemu07vpj5ev0vbk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
