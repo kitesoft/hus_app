@@ -53,73 +53,73 @@ class _SettingsState extends State<SettingsScreen> {
 		final TextStyle linkStyle = themeData.textTheme.body2.copyWith(color: themeData.accentColor);
 
 		return new Row(
-				mainAxisAlignment: MainAxisAlignment.spaceBetween,
-				children: [
-					new FlatButton(
-							child: const Text("ÜBER DIE APP", style: const TextStyle(color: Colors.red)),
-							onPressed: () => showAboutDialog(
-									context: context,
-									applicationVersion: "2.1.1 (213)",
-									applicationName: "HUS App",
-									applicationIcon:
-									new Container(
-										color: Colors.blue,
-										child: new Image.asset(
-											"res/images/hus_logo_white.png",
-											width: 50.0,
-											height: 50.0,
-										),
-									),
-									applicationLegalese: '© Simon Binder',
-									children: <Widget>[
-										new Padding(
-												padding: const EdgeInsets.only(top: 24.0),
-												child: new RichText(
-														text: new TextSpan(
-																children: <TextSpan>[
-																	new TextSpan(
-																			style: aboutTextStyle,
-																			text:
-																			"Alle verwendeten Daten sind öffentlich oder in unserer "
-																	),
-																	createLink(
-																			style: linkStyle,
-																			url: PRIVACY_URL,
-																			text: "Datenschutzerklärung"
-																	),
-																	new TextSpan(
-																			style: aboutTextStyle,
-																			text:
-																			" vermerkt. Wir können keine Garantie dafür geben, "
-																					"dass die angegebenen Daten korrekt bzw. vollständig "
-																					"sind.\n"
-																					"Teile des Quelltextes sind auf "
-																	),
-																	createLink(
-																			style: linkStyle,
-																			url: GITHUB_URL,
-																			text: 'unserem Github-Account'
-																	),
-																	new TextSpan(
-																			style: aboutTextStyle,
-																			text:
-																			" abrufbar.\n\n"
-																					"Wir danken den Entwicklern der quelloffenen Software, die von "
-																					"diesem Projekt verwendet wird. Die Lizenzen dieser sind hier "
-																					"einsehbar:"
-																	),
-																]
-														)
-												)
-										)
-									]
+			mainAxisAlignment: MainAxisAlignment.spaceBetween,
+			children: [
+				new FlatButton(
+					child: const Text("ÜBER DIE APP", style: const TextStyle(color: Colors.red)),
+					onPressed: () => showAboutDialog(
+						context: context,
+						applicationVersion: "2.1.1 (213)",
+						applicationName: "HUS App",
+						applicationIcon:
+						new Container(
+							color: Colors.blue,
+							child: new Image.asset(
+								"res/images/hus_logo_white.png",
+								width: 50.0,
+								height: 50.0,
+							),
+						),
+						applicationLegalese: '© Simon Binder',
+						children: <Widget>[
+							new Padding(
+								padding: const EdgeInsets.only(top: 24.0),
+								child: new RichText(
+									text: new TextSpan(
+										children: <TextSpan>[
+											new TextSpan(
+												style: aboutTextStyle,
+												text:
+												"Alle verwendeten Daten sind öffentlich oder in unserer "
+											),
+											createLink(
+												style: linkStyle,
+												url: PRIVACY_URL,
+												text: "Datenschutzerklärung"
+											),
+											new TextSpan(
+												style: aboutTextStyle,
+												text:
+												" vermerkt. Wir können keine Garantie dafür geben, "
+												"dass die angegebenen Daten korrekt bzw. vollständig "
+												"sind.\n"
+												"Der Quelltext dieser App ist auf "
+											),
+											createLink(
+												style: linkStyle,
+												url: GITHUB_URL,
+												text: 'Github'
+											),
+											new TextSpan(
+												style: aboutTextStyle,
+												text:
+												" abrufbar.\n\n"
+												"Wir danken den Entwicklern der quelloffenen Software, die von "
+												"diesem Projekt verwendet wird. Die Lizenzen dieser sind hier "
+												"einsehbar:"
+											),
+										]
+									)
+								)
 							)
-					),
-					new FlatButton(
-							onPressed: () => launch(FEEDBACK_FORM_URL),
-							child: const Text("FEHLER MELDEN", style: const TextStyle(color: Colors.green))
+						]
 					)
-				]
+				),
+				new FlatButton(
+					onPressed: () => launch(FEEDBACK_FORM_URL),
+					child: const Text("FEHLER MELDEN", style: const TextStyle(color: Colors.green))
+				)
+			]
 		);
 	}
 

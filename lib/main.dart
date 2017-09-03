@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 const String FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSen2rs-uOwnPoepPOtkpp5yH3mQEdz_g_UBFoV0dOJkdH-OLQ/viewform?usp=sf_link";
-const String GITHUB_URL = "https://github.com/Humboldtschule-HG";
+const String GITHUB_URL = "https://github.com/simolus3/hus_app";
 const String PRIVACY_URL = "https://husbot.tutorialfactory.org/legal/privacy.html";
 const String RESET_PW_URL = "https://husnews.tutorialfactory.org/newsystem/login/recoverpw.php";
 

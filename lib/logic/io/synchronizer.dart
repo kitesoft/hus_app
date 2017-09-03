@@ -40,8 +40,9 @@ class Synchronizer {
 
 			if (success)
 				await _azu.api.finishSynchronisation(toSync.toList());
-		} catch (e) {
+		} catch (e, s) {
 			print(e);
+			print(s);
 			success = false;
 		}
 

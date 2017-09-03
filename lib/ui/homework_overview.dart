@@ -118,36 +118,51 @@ class HomeworkCard extends StatelessWidget {
 			));
 		}
 
+		var hwRows = <Widget>[
+			new Row(
+				mainAxisAlignment: MainAxisAlignment.spaceBetween,
+				crossAxisAlignment: CrossAxisAlignment.center,
+				textBaseline: TextBaseline.ideographic,
+				children: [
+					new Container(
+						margin: const EdgeInsets.only(top: 16.0),
+						child: new Hero(
+							tag: hw.heroCourse,
+							child: _getCourseWidget(context),
+						),
+					),
+					new Expanded(
+						child: new Row(
+							mainAxisAlignment: MainAxisAlignment.end,
+							children: infoRowChildren,
+						)
+					)
+				]
+			)
+		];
+
+		if (hw.timeMin > 0 && hw.timeMax > 0 && hw.timeMin <= hw.timeMax) {
+			hwRows.add(new Row(
+				mainAxisSize: MainAxisSize.min,
+				children: [
+					new Icon(Icons.alarm, size: 16.0),
+					new Container(constraints: const BoxConstraints(minWidth: 4.0, maxWidth: 4.0)),
+					new Text("${hw.timeMin} - ${hw.timeMax} min", style: smallText(context)),
+				]
+			));
+		}
+
+		hwRows.add(new Row(
+			crossAxisAlignment: CrossAxisAlignment.end,
+			children: contentChildren,
+		));
+
     return new Card(
 			child: new Container(
 				padding: const EdgeInsets.only(left: 16.0, bottom: 16.0),
 				child: new Column(
-					children: [
-						new Row(
-							mainAxisAlignment: MainAxisAlignment.spaceBetween,
-							crossAxisAlignment: CrossAxisAlignment.center,
-							textBaseline: TextBaseline.ideographic,
-							children: [
-								new Container(
-									margin: const EdgeInsets.only(top: 16.0),
-									child: new Hero(
-										tag: hw.heroCourse,
-										child: _getCourseWidget(context),
-									),
-								),
-								new Expanded(
-									child: new Row(
-										mainAxisAlignment: MainAxisAlignment.end,
-										children: infoRowChildren,
-									)
-								)
-							]
-						),
-						new Row(
-							crossAxisAlignment: CrossAxisAlignment.end,
-							children: contentChildren
-						)
-					]
+					crossAxisAlignment: CrossAxisAlignment.start,
+					children: hwRows
 				)
 			)
 		);
@@ -164,27 +179,28 @@ class EmptyHomeworkWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return new Center(
 			child: new Container(
-					padding: const EdgeInsets.all(8.0),
-					child: new Column(mainAxisAlignment: MainAxisAlignment.center,
-							children: [
-								new Icon(
-										Icons.weekend,
-										size: 56.0,
-										color: Colors.black54
-								),
-								new Text("Nichts zu tun", style: Theme.of(context).textTheme.headline.copyWith(color: Colors.black45)),
-								new Text(
-										"Entweder du hast wirklich nichts zu tun (Glückwunsch), " +
-										"oder du kannst hier einen Eintrag hinzufügen",
-										style: mediumText(context).copyWith(color: Colors.black45),
-										textAlign: TextAlign.center,
-								),
-								new FlatButton(
-										onPressed: onEntryAdd,
-										child: new Text("NEUER EINTRAG", style: new TextStyle(color: Colors.blue))
-								)
-							]
-					)
+				padding: const EdgeInsets.all(8.0),
+				child:
+					new Column(mainAxisAlignment: MainAxisAlignment.center,
+					children: [
+						new Icon(
+							Icons.weekend,
+							size: 56.0,
+							color: Colors.black54
+						),
+						new Text("Nichts zu tun", style: Theme.of(context).textTheme.headline.copyWith(color: Colors.black45)),
+						new Text(
+							"Entweder du hast wirklich nichts zu tun (Glückwunsch), " +
+							"oder du kannst hier einen Eintrag hinzufügen",
+							style: mediumText(context).copyWith(color: Colors.black45),
+							textAlign: TextAlign.center,
+						),
+						new FlatButton(
+							onPressed: onEntryAdd,
+							child: new Text("NEUER EINTRAG", style: new TextStyle(color: Colors.blue))
+						)
+					]
+				)
 			)
 		);
   }

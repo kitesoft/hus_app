@@ -68,6 +68,11 @@ class Homework {
 	String content;
 	bool published;
 
+	///An approximation provided by the creator on how long completing this
+	///homework is going to take.
+	int timeMin = 0;
+	int timeMax = 0;
+
 	bool completed;
 
 	HomeworkSyncStatus syncStatus = HomeworkSyncStatus.SYNCED;
@@ -101,6 +106,13 @@ class Homework {
 			completedSynced = true;
 			syncStatus = HomeworkSyncStatus.SYNCED;
 		}
+
+		if (hw.containsKey("time_min") && hw["time_min"] != null) {
+			timeMin = hw["time_min"];
+		}
+		if (hw.containsKey("time_max") && hw["time_max"] != null) {
+			timeMax = hw["time_max"];
+		}
 	}
 
 	Map exportMap() {
@@ -111,7 +123,9 @@ class Homework {
 				"course": course.id,
 				"due": utils.formatDate.format(due),
 				"content": content,
-				"published": published
+				"published": published,
+				"time_min": timeMin,
+				"time_max": timeMax,
 			},
 			"completed": completed,
 			"completed_sync": completedSynced,

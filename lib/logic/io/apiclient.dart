@@ -152,7 +152,8 @@ class ApiClient {
 	Future<GenericStatusResponse> createHomework(Homework hw) async {
 		var response = await http.post(_getUrl("/homework"), body: {
 			"course": hw.course.id.toString(), "due": utils.formatDate.format(hw.due),
-			"content": hw.content, "publish": hw.published.toString()
+			"content": hw.content, "publish": hw.published.toString(),
+			"time_min": hw.timeMin.toString(), "time_max": hw.timeMax.toString()
 		});
 
 		var res = new GenericStatusResponse(false);
@@ -163,7 +164,7 @@ class ApiClient {
 	Future<GenericStatusResponse> editHomework(Homework hw) async {
 		var response = await http.put(_getUrl("/homework/${hw.id}"), body: {
 			"due": utils.formatDate.format(hw.due), "content": hw.content,
-			"publish": hw.published.toString()
+			"publish": hw.published.toString(), "time_min": hw.timeMin.toString(), "time_max": hw.timeMax.toString()
 		});
 
 		var res = new GenericStatusResponse(false);

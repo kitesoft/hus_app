@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 enum _HWValidationStatus {
-	ERROR_NO_COURSE, ERROR_NO_TIME, ERROR_EMPTY_CONTENT, SUCCESS
+	ERROR_NO_COURSE, ERROR_NO_TIME, ERROR_EMPTY_CONTENT, ERROR_TIME, SUCCESS
 }
 
 class HomeworkEditor {
@@ -34,6 +34,11 @@ class HomeworkEditor {
 	String get content => _fake.content;
 	set content(String c) => _fake.content = c;
 
+	int get timeMin => _fake.timeMin;
+	set timeMin(int i) => _fake.timeMin = i;
+	int get timeMax => _fake.timeMax;
+	set timeMax(int i) => _fake.timeMax = i;
+
 	bool canEditCourse() => _source == null;
 	bool canEditPublishStatus() => _source == null || !_source.published;
 
@@ -45,6 +50,11 @@ class HomeworkEditor {
 		if (content == null || content.trim().isEmpty)
 			return _HWValidationStatus.ERROR_EMPTY_CONTENT;
 
+		if (timeMin > timeMax)
+			return _HWValidationStatus.ERROR_TIME;
+		if (timeMax > 120)
+			return _HWValidationStatus.ERROR_TIME;
+
 		return _HWValidationStatus.SUCCESS;
 	}
 
@@ -52,11 +62,22 @@ class HomeworkEditor {
 		_fake = new Homework(-1, creator, null, null, null, true, false);
 		due = new DateTime.now();
 		isNew = true;
+		timeMin = 10;
+		timeMax = 20;
 	}
 
 	HomeworkEditor.of(Homework hw) {
 		_fake = new Homework(hw.id, hw.creator, hw.course, hw.due, hw.content, hw.published, hw.completed);
 		_source = hw;
+
+		if (hw.timeMin == 0)
+			timeMin = 10;
+		else
+			timeMin = hw.timeMin;
+		if (hw.timeMax == 0)
+			timeMax = 20;
+		else
+			timeMax = hw.timeMax;
 	}
 
 	Homework applyAndFinish() {
@@ -68,6 +89,8 @@ class HomeworkEditor {
 			_source.due = _fake.due;
 			_source.content = _fake.content;
 			_source.published = _fake.published;
+			_source.timeMin = _fake.timeMin;
+			_source.timeMax = _fake.timeMax;
 
 			return _source;
 		}
@@ -99,6 +122,8 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 	VoidCallback onFinishedChanged;
 
 	TextEditingController contentController;
+	TextEditingController timeMinController;
+	TextEditingController timeMaxController;
 
 	bool dateManuallySelected = false;
 
@@ -107,6 +132,14 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 			_setCourse(editor.course); //Load knownLessonDates
 
 		contentController = new TextEditingController(text: editor.content);
+		contentController.addListener(onContentChanged);
+
+		timeMinController = new TextEditingController(text: editor.timeMin.toString());
+		timeMinController.addListener(onTimeChanged);
+
+		timeMaxController = new TextEditingController(text: editor.timeMax.toString());
+		timeMaxController.addListener(onTimeChanged);
+
 		currentStatus = editor.validationStatus;
 	}
 
@@ -175,8 +208,17 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 		setState(() => editor.publish = val);
 	}
 
-	void onContentChanged(String content) {
-		setState(() => editor.content = content);
+	void onContentChanged() {
+		setState(() => editor.content = contentController.text);
+	}
+
+	void onTimeChanged() {
+		setState(() {
+			editor.timeMin = timeMinController.text.isEmpty ? 0 :
+				int.parse(timeMinController.text);
+			editor.timeMax = timeMaxController.text.isEmpty ? 0 :
+			int.parse(timeMaxController.text);
+		});
 	}
 
 	String _formatDate(DateTime date) {
@@ -278,13 +320,51 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 		Widget textInput = new TextField(
 			controller: contentController,
 			maxLines: 5, //TODO Change back to null after https://github.com/flutter/flutter/issues/11582 gets fixed
-			onChanged: onContentChanged,
 			style: mediumText(context).copyWith(color: Colors.black),
 			decoration: new InputDecoration(
 				hintText: "Inhalt der Hausaufgabe hier eingeben",
 			),
 		);
 		entries.add(textInput);
+
+		//Input fields to suggest the time it will take to complete this homework
+		entries.add(new Row(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				new Container(
+					child: const Text("Dauer:"),
+					margin: const EdgeInsets.only(right: 4.0)
+				),
+				new Flexible(
+				  child: new TextField(
+						controller: timeMinController,
+				  	keyboardType: TextInputType.number,
+				  	maxLines: 1,
+				  	decoration: new InputDecoration(
+							hintText: "5"
+				  	),
+				  ),
+				),
+				new Container(
+					child: const Text("bis"),
+					margin: const EdgeInsets.symmetric(horizontal: 4.0),
+				),
+				new Flexible(
+				  child: new TextField(
+						controller: timeMaxController,
+				  	keyboardType: TextInputType.number,
+				  	maxLines: 1,
+				  	decoration: new InputDecoration(
+							hintText: "10"
+				  	),
+				  ),
+				),
+				new Container(
+					child: const Text("Minuten"),
+					margin: const EdgeInsets.only(left: 4.0)
+				),
+			],
+		));
 
 		if (currentStatus != _HWValidationStatus.SUCCESS) {
 			String errorMsg = "";
@@ -298,6 +378,11 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 					break;
 				case _HWValidationStatus.ERROR_EMPTY_CONTENT:
 					errorMsg = "Bitte lege den Inhalt der Hausaufgabe fest!";
+					break;
+				case _HWValidationStatus.ERROR_TIME:
+					errorMsg = "Die Zeit ist ungültig: Sie darf nicht mehr als zwei "
+						"Stunden betragen und das Minimum sollte kleiner als sein als das "
+						"Maximum";
 					break;
 				default:
 					break;
