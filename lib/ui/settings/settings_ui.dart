@@ -186,7 +186,7 @@ class UserInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  	return new Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+		return new Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       new Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         new Text("Angemeldet als",
 					style: smallText(context).copyWith(fontWeight: FontWeight.bold)),
@@ -197,17 +197,20 @@ class UserInfoWidget extends StatelessWidget {
       ]),
       new Container(
 				margin: const EdgeInsets.symmetric(horizontal: 8.0),
-				child: new Column(
-					crossAxisAlignment: CrossAxisAlignment.start,
+				child: new Row(
+					mainAxisAlignment: MainAxisAlignment.start,
 					children: [
 						new Text(user.name, style: mediumText(context)),
+						user.verified ?
+							new Icon(Icons.verified_user, color: Colors.lightBlue) :
+							new Container()
 					]
 				)
 			),
 			new Container(
 				margin: const EdgeInsets.only(left: 8.0),
 				child: new Text(_accTypeDesc(), style: smallText(context)),
-			)
+			),
     ]);
   }
 }

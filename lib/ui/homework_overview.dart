@@ -87,15 +87,26 @@ class HomeworkCard extends StatelessWidget {
   Widget build(BuildContext context) {
 		var infoRowChildren = <Widget> [
 			new Flexible(
-				child: new Text(
-					_getInfoText(),
-					textAlign: TextAlign.right,
-					style: smallText(context).copyWith(color: Colors.black)
+				child: new Column(
+					crossAxisAlignment: CrossAxisAlignment.end,
+				  children: [
+				  	new Text(
+							_getInfoText(),
+							textAlign: TextAlign.right,
+							style: smallText(context).copyWith(color: Colors.black)
+				  	),
+						hw.creator.verified ?
+							new Container(
+									margin: const EdgeInsets.only(right: 4.0),
+									child: new Icon(Icons.verified_user, color: Colors.lightBlue)
+							) :
+							new Container()
+					]
 				)
 			),
 		];
 
-		if (hw.creator.id == authenticatedUser.id || authenticatedUser.type == AccountType.TEACHER)
+		if (hw.creator.id == authenticatedUser.id || authenticatedUser.verified)
 			infoRowChildren.add(buildPopupMenu(context));
 		else //Add some space on the right
 			infoRowChildren.add(new Container(width: 8.0));
@@ -134,8 +145,9 @@ class HomeworkCard extends StatelessWidget {
 					new Expanded(
 						child: new Row(
 							mainAxisAlignment: MainAxisAlignment.end,
+							crossAxisAlignment: CrossAxisAlignment.center,
 							children: infoRowChildren,
-						)
+						),
 					)
 				]
 			)

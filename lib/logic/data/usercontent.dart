@@ -6,6 +6,7 @@ import 'package:azuchath_flutter/utils.dart' as utils;
 class PublicUserInfo {
 	int id;
 	String displayName;
+	bool verified = false;
 
 	PublicUserInfo(this.id, this.displayName);
 
@@ -14,10 +15,13 @@ class PublicUserInfo {
 	PublicUserInfo.fromMap(Map map) {
 		id = map["id"];
 		displayName = map["username"];
+		if (map.containsKey("verified")) {
+			verified = map["verified"];
+		}
 	}
 
 	Map exportMap() {
-		return {"id": id, "username": displayName};
+		return {"id": id, "username": displayName, "verified": verified};
 	}
 }
 

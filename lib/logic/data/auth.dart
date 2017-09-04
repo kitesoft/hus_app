@@ -42,6 +42,7 @@ class AuthenticatedUser {
 
 	int id;
 	String name;
+	bool verified = false;
 
 	AccountType type;
 
@@ -53,6 +54,10 @@ class AuthenticatedUser {
 		id = map["id"];
 		name = map["name"];
 		type = parseAccountType(map["type"]);
+
+		if (map.containsKey("verified")) {
+			verified = map["verified"];
+		}
 
 		subscription = new List<Course>();
 		var coursesAr = map["courses"];
@@ -67,6 +72,7 @@ class AuthenticatedUser {
 	Map exportMap() {
 		return {
 			"id": id, "name": name, "type": formatAccountType(type),
+			"verified": verified,
 			"courses": new List.from(subscription.map((c) => c.id))
 		};
 	}
