@@ -160,14 +160,16 @@ class TimelineChanger {
 	}
 
 	void clearWithoutDaySeps() {
-		var now = new LessonTime.findForDate(new DateTime.now(),
-				azuchath.data.data.schoolHours);
+		var hours = azuchath.data.data.schoolHours;
+
+		var now = new LessonTime.findForDate(new DateTime.now(), hours);
 
 		for (var entry in _source.entries) {
 			if (entry is DaySeparator)
 				continue;
 
-			if (entry.end == null)
+			//if end hour is null, it goes on all day -> won't be removed
+			if (entry.end?.hour == null)
 				continue;
 
 			if (entry.end.isBefore(now)) {
@@ -177,6 +179,9 @@ class TimelineChanger {
 				* that a card might be outdated but a card appearing earlier is not.*/
 			}
 		}
+
+		//Copy so that further operations can use the current state
+		_source.entries = result.entries;
 	}
 
 	void removeEmptyDaySeps() {
