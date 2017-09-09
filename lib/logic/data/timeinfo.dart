@@ -75,3 +75,16 @@ class TimeInfo {
 			"end_date": format.format(end.date), "end_hour": end?.hour?.number};
 	}
 }
+
+class Bulletin {
+
+	final int id;
+	final String title;
+	final String url;
+
+	Bulletin(this.id, this.title, this.url);
+
+	static Bulletin fromMap(Map map) {
+		return new Bulletin(map["id"], map["title"], map["url"]);
+	}
+}

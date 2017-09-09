@@ -219,6 +219,14 @@ class ApiClient {
 		await res.populate(response);
 		return res;
 	}
+
+	Future<BulletinResponse> getBulletins() async {
+		var response = await http.get(_getUrl("/bulletins"));
+
+		var res = new BulletinResponse(false);
+		await res.populate(response);
+		return res;
+	}
 }
 
 enum GeneralServerError {
@@ -602,3 +610,24 @@ class SetSubscriptionResponse extends ServerResponse {
   }
 }
 
+class BulletinResponse extends ServerResponse {
+
+	BulletinResponse(bool success) : super(success);
+
+	List<Bulletin> bulletins = new List<Bulletin>();
+
+	@override
+	Future populate(Response res) async {
+		success = res.statusCode == 200;
+
+		if (success) {
+			var ar = JSON.decode(res.body);
+
+			for (var b in ar) {
+				bulletins.add(Bulletin.fromMap(b));
+			}
+		} else {
+			_parseError(res);
+		}
+	}
+}

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
+import 'package:azuchath_flutter/ui/bulletins.dart';
 import 'package:azuchath_flutter/ui/editor/manage_content.dart';
 import 'package:azuchath_flutter/ui/homework_overview.dart';
 import 'package:azuchath_flutter/ui/login_greeter.dart';
@@ -180,6 +181,14 @@ class HomeScreenState extends State<HomeScreen> {
 		);
 	}
 
+	void openBulletins() {
+		Navigator.of(context).push(
+			new MaterialPageRoute<ContentNavResponse>(
+					builder: (_) => new BulletinScreen(azu)
+			)
+		);
+	}
+
 	Future startSync() {
 		var refreshState = _refreshIndicatorKey.currentState;
 		return refreshState?.show();
@@ -206,12 +215,29 @@ class HomeScreenState extends State<HomeScreen> {
 
 	PopupMenuButton buildPopupMenu(BuildContext ctx) {
 		return new PopupMenuButton(
-			onSelected: (v) => v == 0 ? openSettings() : startSync(),
+			onSelected: (v) {
+				switch (v) {
+					case 0:
+						openSettings();
+						break;
+					case 2:
+						openBulletins();
+						break;
+					case 1:
+						startSync();
+						break;
+				}
+			},
 			itemBuilder: (ctx) => [
 				const PopupMenuItem(
 					value: 0,
 					child: const Text("Einstellungen")
 				),
+				const PopupMenuItem(
+					value: 2,
+					child: const Text("Aushänge")
+				),
+				const PopupMenuDivider(),
 				const PopupMenuItem(
 					value: 1,
 					child: const Text("Aktualisieren")
