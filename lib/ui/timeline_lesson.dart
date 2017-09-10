@@ -331,11 +331,11 @@ class _LessonWidget extends StatelessWidget {
 		var unfinished = content.hw.where((hw) => !hw.completed);
 		var canComplete = azu.data.data.session.user.type == AccountType.STUDENT;
 
-		var topRow = new GestureDetector(
-			onTap: toggleHwExpand,
-			child: new Container(
-				padding: const EdgeInsets.only(top: 8.0),
-				child: new Row(
+		var topRow = new Material(
+			type: MaterialType.transparency,
+		  child: new InkWell(
+		  	onTap: toggleHwExpand,
+		  	child: new Row(
 					mainAxisAlignment: MainAxisAlignment.spaceBetween,
 					children: [
 						new Row(
@@ -344,15 +344,16 @@ class _LessonWidget extends StatelessWidget {
 									padding: const EdgeInsets.only(right: 8.0),
 									child: new AnimatedCrossFade(
 										crossFadeState:
-										unfinished.isNotEmpty ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+											unfinished.isNotEmpty ? CrossFadeState.showFirst :
+												CrossFadeState.showSecond,
 										duration: const Duration(milliseconds: 200),
-										firstChild: new Icon(Icons.assignment, color: Colors.red),
-										secondChild: new Icon(Icons.done, color: Colors.green)
+										firstChild: const Icon(Icons.assignment, color: Colors.red),
+										secondChild: const Icon(Icons.done, color: Colors.green)
 									),
 								),
 								canComplete ?
-									new Text(unfinished.isNotEmpty ? "Noch Hausaufgaben" : "Alles fertig", style: textStyleSmall)
-										: new Text("Hausaufgaben", style: textStyleSmall)
+								new Text(unfinished.isNotEmpty ? "Noch Hausaufgaben" : "Alles fertig", style: textStyleSmall)
+									: new Text("Hausaufgaben", style: textStyleSmall)
 							]
 						),
 
@@ -362,7 +363,7 @@ class _LessonWidget extends StatelessWidget {
 						)
 					]
 				),
-			)
+		  ),
 		);
 
 		var hwRows = new List<Row>();
@@ -390,6 +391,7 @@ class _LessonWidget extends StatelessWidget {
 		}
 
 		return new Column(
+			crossAxisAlignment: CrossAxisAlignment.start,
 			children: [
 				topRow,
 				new SizeTransition(

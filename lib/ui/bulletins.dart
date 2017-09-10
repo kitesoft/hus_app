@@ -46,7 +46,9 @@ class BulletinState extends State<BulletinScreen> {
 			}
 
 			setState(() {});
-		}, onError: () {
+		}, onError: (e, s) {
+			print("Could not fetch bulletins: $e");
+			print(s);
 			setState(() => state = _LoadingState.ERROR);
 		});
 	}
@@ -59,8 +61,8 @@ class BulletinState extends State<BulletinScreen> {
 		  	mainAxisSize: MainAxisSize.max,
 		  	children: [
 		  		new CircularProgressIndicator(),
-		  		new Text("Die Aushänge werden geladen", style: mediumText(context)),
-					new Text("Bitte gedulde dich noch einen Moment", style: smallText(context))
+		  		new Text("Die Aushänge werden geladen", style: mediumText(context), textAlign: TextAlign.center,),
+					new Text("Bitte gedulde dich noch einen Moment", style: smallText(context), textAlign: TextAlign.center,)
 		  	],
 		  ),
 		);
@@ -73,8 +75,9 @@ class BulletinState extends State<BulletinScreen> {
 				crossAxisAlignment: CrossAxisAlignment.center,
 				mainAxisSize: MainAxisSize.max,
 				children: [
-					new Text("Ein Fehler ist aufgetreten", style: mediumText(context)),
-					new Text("Bitte stelle sicher, dass du eine aktive Internetverbindung besitzt oder versuche es später erneut", style: smallText(context))
+					new Text("Ein Fehler ist aufgetreten", style: mediumText(context), textAlign: TextAlign.center,),
+					new Text("Bitte stelle sicher, dass du eine aktive Internetverbindung besitzt oder versuche es später erneut",
+						style: smallText(context), textAlign: TextAlign.center,)
 				],
 			),
 		);
@@ -98,9 +101,16 @@ class BulletinState extends State<BulletinScreen> {
 			    		const Divider(),
 			    		new Image.network(b.url, fit: BoxFit.fill),
 							const Divider(),
-							new IconButton(icon: new Icon(Icons.open_in_browser), onPressed: () {
-								launch(b.url);
-							})
+							new FlatButton(
+								onPressed: () => launch(b.url),
+								child: new Row(
+									mainAxisSize: MainAxisSize.min,
+									children: [
+										new Icon(Icons.open_in_browser),
+										new Text("Vollbild")
+									],
+								)
+							),
 			    	]
 			    ),
 			  ),
@@ -113,7 +123,7 @@ class BulletinState extends State<BulletinScreen> {
 			new Container(
 				margin: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
 				child: new Text(
-					"Klicke auf einen Eintrag, um ihn azuzeigen",
+					"Klicke auf einen Eintrag, um ihn anzuzeigen",
 					style: mediumText(context).copyWith(color: Colors.black),
 				)
 			)
