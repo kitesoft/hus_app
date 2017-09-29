@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/ui/editor/homework.dart';
+import 'package:azuchath_flutter/ui/ui_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -48,13 +49,11 @@ class AddContentState extends State<AddContent> {
   @override
   Widget build(BuildContext context) {
 		var canBeFinished = contentKey.currentState != null && contentKey.currentState.canBeCompleted();
-  	var actions = <Widget>[
-  		new IconButton(
-				icon: new Icon(Icons.done),
-				tooltip: "Speichern",
-				onPressed: canBeFinished ? complete : null
-			)
-		];
+  	var action = new IconButton(
+			icon: new Icon(Icons.done),
+			tooltip: "Speichern",
+			onPressed: canBeFinished ? complete : null
+		);
 
   	HomeworkEditor editor;
   	if (toEdit != null && toEdit is Homework) {
@@ -64,12 +63,11 @@ class AddContentState extends State<AddContent> {
 			editor = new HomeworkEditor.createNewHomework(user);
 		}
 
-		return new Scaffold(
-			appBar: new AppBar(
-				title: new Text('Neuer Inhalt'),
-				actions: actions,
-			),
-			body: new EditHomework(azu, editor, onCanFinishChanged, key: contentKey)
+		return new HUSScaffold(
+			azu,
+			title: "Neuer Inhalt",
+			action: action,
+			content: new EditHomework(azu, editor, onCanFinishChanged, key: contentKey),
 		);
   }
 }

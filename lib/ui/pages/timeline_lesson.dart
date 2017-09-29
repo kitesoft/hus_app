@@ -6,8 +6,7 @@ import 'package:azuchath_flutter/logic/data/timeinfo.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/logic/preferences.dart';
 import 'package:azuchath_flutter/logic/timeline.dart';
-import 'package:azuchath_flutter/ui/editor/manage_content.dart';
-import 'package:azuchath_flutter/ui/settings/course_selection.dart';
+import 'package:azuchath_flutter/ui/ui_core.dart';
 import 'package:azuchath_flutter/ui/ui_utils.dart';
 import 'package:azuchath_flutter/utils.dart';
 import 'package:flutter/material.dart';
@@ -632,12 +631,11 @@ class _InfoWidget extends StatelessWidget {
 class LessonTimeline extends StatefulWidget {
 
 	final Azuchath azu;
-	final VoidCallback refreshCb;
 
-	LessonTimeline(this.azu, this.refreshCb, {Key key}) : super(key: key);
+	LessonTimeline(this.azu, {Key key}) : super(key: key);
 
 	@override
-	State<StatefulWidget> createState() => new LessonsState(azu, refreshCb);
+	State<StatefulWidget> createState() => new LessonsState(azu);
 }
 
 class LessonsState extends State<LessonTimeline> with TickerProviderStateMixin {
@@ -646,15 +644,13 @@ class LessonsState extends State<LessonTimeline> with TickerProviderStateMixin {
 	ScrollController _scroll = new ScrollController();
 	bool canScrollEstimate = false;
 
-	LessonsState(this._azu, this.refreshCb);
+	LessonsState(this._azu);
 
 	Map<LessonEntry, bool> hwExpanded = new Map();
 	Map<LessonEntry, AnimationController> controllers = new Map();
 
 	bool noLessonsEasterEgg = false;
 	int _firstLessonIndex;
-
-	VoidCallback refreshCb;
 
 	void _disposeAnim() {
 		controllers.values.forEach((a) => a.dispose());
@@ -694,7 +690,7 @@ class LessonsState extends State<LessonTimeline> with TickerProviderStateMixin {
 						),
 						new RaisedButton(
 							child: new Text("Aktualisieren", style: const TextStyle(color: Colors.blue)),
-							onPressed: refreshCb
+							onPressed: () => HUSScaffold.of(context).startSync()
 						)
 					],
 				)
@@ -766,12 +762,7 @@ class LessonsState extends State<LessonTimeline> with TickerProviderStateMixin {
 	}
 
 	void showCourseSelection() {
-		Navigator.of(context).push(
-			new MaterialPageRoute<ContentNavResponse>(
-				builder: (_) =>
-				new CourseSelector(_azu, _azu.data.data.session.user.subscription)
-			)
-		);
+		HUSScaffold.of(context).showCourseSelection();
 	}
 
 	Future<Null> scrollToTop() {

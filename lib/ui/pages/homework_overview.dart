@@ -2,6 +2,7 @@ import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/auth.dart';
 import 'package:azuchath_flutter/logic/data/lessons.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
+import 'package:azuchath_flutter/ui/ui_core.dart';
 import 'package:azuchath_flutter/ui/ui_utils.dart';
 import 'package:azuchath_flutter/utils.dart';
 import 'package:flutter/material.dart';
@@ -183,9 +184,7 @@ class HomeworkCard extends StatelessWidget {
 
 class EmptyHomeworkWidget extends StatelessWidget {
 
-	final VoidCallback onEntryAdd;
-
-	EmptyHomeworkWidget(this.onEntryAdd);
+	EmptyHomeworkWidget();
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +207,7 @@ class EmptyHomeworkWidget extends StatelessWidget {
 							textAlign: TextAlign.center,
 						),
 						new FlatButton(
-							onPressed: onEntryAdd,
+							onPressed: () => HUSScaffold.of(context).showCreateHomework(),
 							child: new Text("NEUER EINTRAG", style: new TextStyle(color: Colors.blue))
 						)
 					]
@@ -221,28 +220,23 @@ class EmptyHomeworkWidget extends StatelessWidget {
 class HomeworkOverview extends StatefulWidget {
 
 	final Azuchath _azu;
-	final HomeworkEditListener onHwEdit;
-	final HomeworkEditListener onHwDelete;
 
-	HomeworkOverview(this._azu, this.onHwEdit, this.onHwDelete);
+	HomeworkOverview(this._azu);
 
   @override
-  State<StatefulWidget> createState() => new HomeworkState(_azu, onHwEdit, onHwDelete);
+  State<StatefulWidget> createState() => new HomeworkState(_azu);
 }
 
 class HomeworkState extends State<HomeworkOverview> {
 
 	final Azuchath _azu;
-	final HomeworkEditListener onHwEdit;
-	final HomeworkEditListener onHwDelete;
 
-	HomeworkState(this._azu, this.onHwEdit, this.onHwDelete);
+	HomeworkState(this._azu);
 
 	void homeworkAction(Homework hw, _HomeworkAction action) {
 		if (action == _HomeworkAction.EDIT)
-			onHwEdit(hw);
+			HUSScaffold.of(context).showEditHomework(hw);
 		if (action == _HomeworkAction.DELETE) {
-			onHwDelete(hw);
 			setState(() {
 				hw.syncStatus = HomeworkSyncStatus.DELETED;
 				_azu.data.setHomeworkModified();
@@ -296,7 +290,7 @@ class HomeworkState extends State<HomeworkOverview> {
 		}
 
 		if (empty)
-			return new EmptyHomeworkWidget(() => onHwEdit(null));
+			return new EmptyHomeworkWidget();
 
 		//Add some padding at the bottom so that the actions are reachable even with
 		//the FAB around

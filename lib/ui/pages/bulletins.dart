@@ -181,11 +181,6 @@ class BulletinState extends State<BulletinScreen> {
 				break;
 		}
 
-    return new Scaffold(
-			appBar: new AppBar(
-				title: const Text("Aushänge"),
-			),
-			body: content,
-		);
+    return content;
   }
 }

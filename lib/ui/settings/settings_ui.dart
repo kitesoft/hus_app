@@ -5,6 +5,7 @@ import 'package:azuchath_flutter/logic/data/manager.dart';
 import 'package:azuchath_flutter/logic/preferences.dart';
 import 'package:azuchath_flutter/main.dart';
 import 'package:azuchath_flutter/ui/settings/course_selection.dart';
+import 'package:azuchath_flutter/ui/ui_core.dart';
 import 'package:azuchath_flutter/ui/ui_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -149,11 +150,9 @@ class _SettingsState extends State<SettingsScreen> {
 		children.add(const Divider());
 		children.add(new PreferencesWidget(_azu, onPreferencesChanged));
 
-    return new Scaffold(
-			appBar: new AppBar(
-				title: new Text('Einstellungen'),
-			),
-			body: new SingleChildScrollView(
+		return new HUSScaffold(_azu,
+			title: "Einstellungen",
+			content: new SingleChildScrollView(
 				child: new Container(
 					margin: const EdgeInsets.all(16.0),
 					child: new Column(
