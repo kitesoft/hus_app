@@ -161,7 +161,7 @@ class _FreePeriodWidget extends StatelessWidget {
 }
 
 enum _LessonWidgetType {
-	NORMAL, CHANGED, REMOVED
+	NORMAL, CHANGED, EXAM, REMOVED
 }
 
 typedef void _HWChangedCallback(bool completed, Homework hw);
@@ -182,9 +182,10 @@ class _LessonContent {
 	String message;
 
 	List<Homework> hw;
+	Exam exam;
 }
 
-class _LessonWidget extends StatelessWidget {
+class LessonWidget extends StatelessWidget {
 
 	final _LessonContent content;
 	final bool firstInTimeline;
@@ -196,7 +197,7 @@ class _LessonWidget extends StatelessWidget {
 	final ValueChanged<bool> hwExpandCb;
 	final bool hwExpanded;
 
-	static _LessonWidget _getForLesson(LessonEntry entry, _HWChangedCallback hwcb,
+	static LessonWidget _getForLesson(LessonEntry entry, _HWChangedCallback hwcb,
 			bool hwExpanded, AnimationController hwExpandController,
 			ValueChanged<bool> hwExpandCb, List<Homework> hw, bool firstInTl, Azuchath azu) {
 		var content = new _LessonContent();
@@ -205,6 +206,10 @@ class _LessonWidget extends StatelessWidget {
 		content.end = entry.end;
 
 		content.type = entry.substitution ? (entry.removed ? _LessonWidgetType.REMOVED : _LessonWidgetType.CHANGED) : _LessonWidgetType.NORMAL;
+		if (entry.exam != null)
+			content.type = _LessonWidgetType.EXAM;
+		content.exam = entry.exam;
+
 		content.room = entry.room;
 		//null course -> null, otherwise use subject name if available or course name
 		content.subject = entry.course.map((c) => c == null ? null : c.subject ?? c.name);
@@ -219,10 +224,10 @@ class _LessonWidget extends StatelessWidget {
 
 		content.hw = hw;
 
-		return new _LessonWidget(content, firstInTl, hwcb, hwExpanded, hwExpandController, hwExpandCb, azu, new ObjectKey(entry));
+		return new LessonWidget(content, firstInTl, hwcb, hwExpanded, hwExpandController, hwExpandCb, azu, new ObjectKey(entry));
 	}
 
-	_LessonWidget(this.content, this.firstInTimeline, this.cb, this.hwExpanded, this.hwExpandController, this.hwExpandCb, this.azu, Key key) : super(key: key);
+	LessonWidget(this.content, this.firstInTimeline, this.cb, this.hwExpanded, this.hwExpandController, this.hwExpandCb, this.azu, Key key) : super(key: key);
 
 	static Color _getCardColor(_LessonWidgetType type) {
 		if (type == null)
@@ -233,6 +238,8 @@ class _LessonWidget extends StatelessWidget {
 				return Colors.white;
 			case _LessonWidgetType.CHANGED:
 				return Colors.blue[600];
+			case _LessonWidgetType.EXAM:
+				return Colors.yellow;
 			case _LessonWidgetType.REMOVED:
 				return Colors.red[400];
 		}
@@ -240,15 +247,28 @@ class _LessonWidget extends StatelessWidget {
 		return Colors.white;
 	}
 
-	static String _getHeading(_LessonWidgetType type) {
-		switch (type) {
+	String _getHeading() {
+		if (content.exam?.replacesLesson ?? false)
+			return "Klausur";
+
+		switch (content.type) {
 			case _LessonWidgetType.CHANGED: return "Unterricht geändert";
 			case _LessonWidgetType.REMOVED: return "Unterricht entfällt";
 			default: return "Unterricht";
 		}
 	}
 
-	Widget _buildInfo(BuildContext context, String hint, String content, [bool changed = false]) {
+	static Widget buildInfo(BuildContext context, String hint, String content, [bool changed = false, contentHero]) {
+		Widget mainContent = new Text(content, style: changed ? infoTextChanged : infoText);
+
+		if (contentHero != null) {
+			mainContent = new Hero(tag: contentHero, child: mainContent);
+		}
+
+		mainContent = new Flexible(
+			child: mainContent
+		);
+
 		return new Row(
 				mainAxisSize: MainAxisSize.min,
 				crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -258,7 +278,7 @@ class _LessonWidget extends StatelessWidget {
 							margin: new EdgeInsets.only(right: 4.0),
 							child: new Text(hint, style: smallText(context))
 					),
-					new Text(content, style: changed ? infoTextChanged : infoText)
+					mainContent
 				]
 		);
 	}
@@ -412,6 +432,43 @@ class _LessonWidget extends StatelessWidget {
 		}
 	}
 
+	Widget buildExamRow(BuildContext context) {
+		return new Material(
+			type: MaterialType.transparency,
+			child: new InkWell(
+				onTap: () => HUSScaffold.of(context).showExamDetails(content.exam),
+			  child: new Row(
+			  	mainAxisAlignment: MainAxisAlignment.spaceBetween,
+			    children: [
+			      new Row(
+			      	crossAxisAlignment: CrossAxisAlignment.baseline,
+			      	textBaseline: TextBaseline.ideographic,
+			      	children: [
+			      		new Container(
+			      			padding: const EdgeInsets.only(right: 8.0),
+			      			child: new Icon(Icons.edit, color: Colors.green)
+			      		),
+								new Hero(
+									tag: content.exam.heroTitle,
+								  child: new Text(
+								  	content.exam.title,
+								  	style: new TextStyle(fontWeight: FontWeight.bold),
+								  	maxLines: 1,
+								  	overflow: TextOverflow.ellipsis,
+								  ),
+								),
+			      	],
+			      ),
+						new Container(
+							margin: const EdgeInsets.only(right: 5.0),
+							child: new Icon(Icons.arrow_forward_ios, size: 20.0)
+						),
+			    ],
+			  ),
+			),
+		);
+	}
+
 	@override
 	Widget build(BuildContext context) {
 		var userAccountType = azu.data.data.session.user.type;
@@ -422,16 +479,16 @@ class _LessonWidget extends StatelessWidget {
 		//irrelevant
 		if (content.type != _LessonWidgetType.REMOVED) {
 			if (!content.room.bothNull())
-				infoRows.add(_buildInfo(context, "in", content.room.current, content.room.hasChanged()));
+				infoRows.add(buildInfo(context, "in", content.room.current, content.room.hasChanged()));
 			if (content.teacher != null && userAccountType != AccountType.TEACHER)
-				infoRows.add(_buildInfo(context, "bei", content.teacher));
+				infoRows.add(buildInfo(context, "bei", content.teacher));
 		}
 
 		if (userAccountType == AccountType.TEACHER) {
 			var formDesc = content.form ?? "mehrere";
 			var courseDesc = content.courseName ?? "?";
 
-			infoRows.add(_buildInfo(context, "mit", "$formDesc ($courseDesc)"));
+			infoRows.add(buildInfo(context, "mit", "$formDesc ($courseDesc)"));
 		}
 
 		var rows = <Widget>[
@@ -448,7 +505,7 @@ class _LessonWidget extends StatelessWidget {
 									child: new Column(
 										crossAxisAlignment: CrossAxisAlignment.start,
 										children: [
-											new Text(_getHeading(content.type), style: textStyleSmall),
+											new Text(_getHeading(), style: textStyleSmall),
 											new Text(content.subject.current, style: subjectText)
 										]
 									),
@@ -481,6 +538,10 @@ class _LessonWidget extends StatelessWidget {
 					new Text(content.message),
 				]
 			));
+		}
+
+		if (content.exam != null) {
+			rows.add(buildExamRow(context));
 		}
 
 		if (content.type != _LessonWidgetType.REMOVED && content.hw != null && content.hw.isNotEmpty) {
@@ -734,7 +795,7 @@ class LessonsState extends State<LessonTimeline> with TickerProviderStateMixin {
 					vsync: this)
 			);
 
-			var lwdgt = _LessonWidget._getForLesson(entry, onHomeworkChanged, expanded, animationController, (e) => onHomeworkExpandedChange(entry, e), hw, index == _firstLessonIndex, _azu);
+			var lwdgt = LessonWidget._getForLesson(entry, onHomeworkChanged, expanded, animationController, (e) => onHomeworkExpandedChange(entry, e), hw, index == _firstLessonIndex, _azu);
 			if (noLessonsEasterEgg)
 				lwdgt.content.type = _LessonWidgetType.REMOVED;
 			return lwdgt;

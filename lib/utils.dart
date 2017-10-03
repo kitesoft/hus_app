@@ -143,3 +143,16 @@ class MinuteChangeListener {
 		}
 	}
 }
+
+///Calculates n!
+int factorial(int n) {
+	var p = 1;
+	for (var i = 2; i <= n; i++) {
+		p *= i;
+	}
+	return p;
+}
+
+double binomialCoefficient(int n, int k) {
+	return factorial(n) / (factorial(k) * factorial(n - k));
+}

@@ -137,3 +137,120 @@ class Homework {
 		};
 	}
 }
+
+class Exam {
+
+	//Unique object for hero transitions
+	Object heroTitle = new Object();
+
+	int id;
+	Course course;
+	bool replacesLesson;
+
+	String title;
+	List<ExamTopic> topics;
+
+	LessonTime start;
+	LessonTime end;
+
+	Exam.fromMap(Map map, DataStorage storage, [alwaysRef = false]) {
+		id = map["id"];
+		if (alwaysRef)
+			course = storage.getCourseById(map["course"]);
+		else
+			course = storage.handleCourse(new Course.fromData(map["course"], storage));
+
+		replacesLesson = map["replaces_lesson"];
+		title = map["title"];
+		
+		var date = utils.formatDate.parseStrict(map["writing_date"]);
+		start = new LessonTime(date, storage.getHourByNumber(map["hour_start"]));
+		end = new LessonTime(date, storage.getHourByNumber(map["hour_end"]));
+
+		topics = [];
+		for (var t in map["topics"]) {
+			topics.add(new ExamTopic.fromMap(t));
+		}
+	}
+
+	double calcLearningProgress() {
+		//TODO This needs to be better
+		var sum = 0.0;
+
+		for (var topic in topics) {
+			if (topic.learned == ExamLearningStatus.WELL)
+				sum += 3;
+			if (topic.learned == ExamLearningStatus.MODERATE)
+				sum += 1.75;
+		}
+
+		return sum / (3 * topics.length);
+	}
+
+	Map exportMap() {
+		var topics = [];
+		for (var t in this.topics) {
+			topics.add(t.exportMap());
+		}
+
+		return {
+			"id": id, "course": course.id, "replaces_lesson": replacesLesson,
+			"title": title, "writing_date": utils.formatDate.format(start.date),
+			"hour_start": start.hour.number, "hour_end": end.hour.number,
+			"topics": topics
+		};
+	}
+}
+
+enum ExamLearningStatus {
+	POOR, MODERATE, WELL
+}
+
+class ExamTopic {
+
+	int id;
+
+	String content;
+	String explanation;
+
+	ExamLearningStatus learned;
+	String get learnedStr => _toStr(learned);
+
+	bool learningChanged = false;
+
+	ExamTopic.fromMap(Map map) {
+		id = map["id"];
+		content = map["content"];
+		explanation = map["explanation"];
+		learned = _fromStr(map["learned"]);
+
+		if (map.containsKey("sync_learning")) {
+			learningChanged = map["sync_learning"];
+		}
+	}
+
+	Map exportMap() {
+		return {
+			"id": id, "content": content, "explanation": explanation,
+			"learned": _toStr(learned), "sync_learning": learningChanged
+		};
+	}
+
+	static ExamLearningStatus _fromStr(String str) {
+		switch (str) {
+			case "POOR": return ExamLearningStatus.POOR;
+			case "MODERATE": return ExamLearningStatus.MODERATE;
+			case "WELL": return ExamLearningStatus.WELL;
+		}
+		return null;
+	}
+
+	static String _toStr(ExamLearningStatus status) {
+		switch (status) {
+			case ExamLearningStatus.POOR: return "POOR";
+			case ExamLearningStatus.MODERATE: return "MODERATE";
+			case ExamLearningStatus.WELL: return "WELL";
+		}
+		return null;
+	}
+}

@@ -17,6 +17,7 @@ class DataManager {
 	bool dirty = false;
 
 	bool homeworkEdited = false;
+	bool examsEdited = false;
 
 	bool get isLoggedIn => data.session != null;
 
@@ -53,6 +54,11 @@ class DataManager {
 		homeworkEdited = true;
 	}
 
+	void setExamsModified() {
+		markDirty();
+		examsEdited = true;
+	}
+
 	void saveIfDirty() {
 		if (dirty)
 			io.writeData();
@@ -87,11 +93,17 @@ class DatabaseManager {
 		storage.timeInfo = new List.from(data["time_info"].map((t) => new TimeInfo.fromData(t, storage)));
 		storage.homework = new List.from(data["homework"].map((hw) => new Homework.fromMap(hw, storage, true)));
 
+		if (data.containsKey("exams")) {
+			storage.exams = new List.from(data["exams"].map((ex) => new Exam.fromMap(ex, storage, true)));
+		}
+
 		if (data.containsKey("session"))
 			storage.session = new Session.fromData(data["session"], storage, true);
 
 		if (data.containsKey("local_homework_changes"))
 			source.homeworkEdited = data["local_homework_changes"];
+		if (data.containsKey("local_exam_changes"))
+			source.homeworkEdited = data["local_exam_changes"];
 	}
 
 	Future writeData() async {
@@ -105,10 +117,12 @@ class DatabaseManager {
 		data["substitutions"] = new List.from(source.data.substitutions.map((s) => s.exportMap()));
 		data["time_info"] = new List.from(source.data.timeInfo.map((t) => t.exportMap()));
 		data["homework"] = new List.from(source.data.homework.map((hw) => hw.exportMap()));
+		data["exams"] = new List.from(source.data.exams.map((ex) => ex.exportMap()));
 		if (source.data.session != null)
 			data["session"] = source.data.session.exportMap();
 
 		data["local_homework_changes"] = source.homeworkEdited;
+		data["local_exam_changes"] = source.examsEdited;
 
 		var json = JSON.encode(data);
 		await file.writeAsString(json, mode: FileMode.WRITE);
@@ -132,6 +146,7 @@ class DataStorage {
 
 	List<TimeInfo> timeInfo;
 	List<Homework> homework;
+	List<Exam> exams;
 
 	DataStorage(this.session, this.weeks, this.schoolHours, this.teachers, this.courses, this.lessons, this.timeInfo, this.substitutions);
 
@@ -145,6 +160,7 @@ class DataStorage {
 		substitutions = new List<Substitution>();
 		timeInfo = new List<TimeInfo>();
 		homework = new List<Homework>();
+		exams = new List<Exam>();
 	}
 
 	DataStorage.copyFrom(DataStorage other) {
@@ -157,6 +173,7 @@ class DataStorage {
 		substitutions = new List<Substitution>.from(other.substitutions);
 		timeInfo = new List<TimeInfo>.from(other.timeInfo);
 		homework = new List<Homework>.from(other.homework);
+		exams = new List<Exam>.from(other.exams);
 	}
 
 	Week getWeekBySequence(int sequence) => weeks.firstWhere((w)=>w.sequence == sequence, orElse: () => null);

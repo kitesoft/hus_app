@@ -248,9 +248,9 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 								? "Fach ausgewählt:"
 								: "Kein Fach ausgewählt", style: smallText(context)),
 						new Container(
-								margin: const EdgeInsets.only(left: 8.0, top: 8.0),
-								child: courseText
-						)
+							margin: const EdgeInsets.only(left: 8.0, top: 8.0),
+							child: courseText
+						),
 					]
 			)
 		];
@@ -325,6 +325,7 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 				hintText: "Inhalt der Hausaufgabe hier eingeben",
 			),
 		);
+
 		entries.add(textInput);
 
 		//Input fields to suggest the time it will take to complete this homework
@@ -388,8 +389,11 @@ class HomeworkEditState extends ContentManager<EditHomework> {
 					break;
 			}
 
-			entries.add(new Text(
-					errorMsg, style: smallText(context).copyWith(color: Colors.red)));
+			entries.add(
+				new Text(
+					errorMsg, style: smallText(context).copyWith(color: Colors.red)
+				)
+			);
 		}
 
 		return new SingleChildScrollView(

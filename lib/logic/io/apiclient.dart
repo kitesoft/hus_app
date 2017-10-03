@@ -169,6 +169,9 @@ class ApiClient {
 
 		var res = new GenericStatusResponse(false);
 		await res.populate(response);
+		if (res.success) {
+			hw.id = JSON.decode(response.body)["homework"]["id"];
+		}
 		return res;
 	}
 
@@ -190,7 +193,31 @@ class ApiClient {
 		return res;
 	}
 
-	Future<FormListResponse> getAllForms() async {
+	Future<ExamListResponse> fetchExams(DataStorage storage) async {
+		var response = await http.get(_getUrl("/exams"));
+
+		var res = new ExamListResponse(storage);
+		await res.populate(response);
+		return res;
+	}
+
+	Future<GenericStatusResponse> updateExamLearning(List<ExamTopic> changed) async {
+		var formatted = [];
+		for (var topic in changed) {
+			formatted.add({"id": topic.id, "status": topic.learnedStr});
+		}
+
+		var response = await http.patch(_getUrl("/exams/learning"),
+				body: JSON.encode(formatted),
+				headers: {"Content-Type": "application/json"}
+			);
+
+		var res = new GenericStatusResponse(false);
+		await res.populate(response);
+		return res;
+	}
+
+ 	Future<FormListResponse> getAllForms() async {
 		var response = await http.get(_getUrl("/subscription/forms"));
 
 		var res = new FormListResponse(false);
@@ -519,6 +546,27 @@ class HomeworkListResponse extends ServerResponse {
 
     	for (var hw in ar) {
 				homework.add(new Homework.fromMap(hw, _ref));
+			}
+		}
+  }
+}
+
+class ExamListResponse extends ServerResponse {
+
+	DataStorage _ref;
+	List<Exam> exams = new List<Exam>();
+
+	ExamListResponse(this._ref) : super(false);
+
+  @override
+  Future populate(Response res) async {
+  	success = res.statusCode == 200;
+
+  	if (success) {
+  		var ar = JSON.decode(res.body);
+
+  		for (var ex in ar) {
+  			exams.add(new Exam.fromMap(ex, _ref));
 			}
 		}
   }

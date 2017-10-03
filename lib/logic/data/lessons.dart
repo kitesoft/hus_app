@@ -354,6 +354,10 @@ class LessonTime {
 		return orEqual;
 	}
 
+	bool sameTimeAs(LessonTime other) {
+		return other.date == date && other.hour.number == hour.number;
+	}
+
 	LessonTime previousTime(List<LessonHour> hours) {
 		if (hour == null || hour == hours.first) { //Use previous day, last hour
 			return new LessonTime(date.subtract(new Duration(days: 1)), hours.last);

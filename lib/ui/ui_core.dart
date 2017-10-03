@@ -5,6 +5,7 @@ import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/ui/editor/manage_content.dart';
 import 'package:azuchath_flutter/ui/pages/bulletins.dart';
+import 'package:azuchath_flutter/ui/pages/exams.dart';
 import 'package:azuchath_flutter/ui/pages/homework_overview.dart';
 import 'package:azuchath_flutter/ui/pages/timeline_lesson.dart';
 import 'package:azuchath_flutter/ui/settings/course_selection.dart';
@@ -90,11 +91,15 @@ class _HUSState extends State<HUSScaffold> {
 	}
 
 	void showSettings() {
-		_showRoute<Null>((_) => new SettingsScreen(widget.azuchath));
+		_showRoute<Null>((_) => new SettingsScreen(azuchath));
 	}
 
 	void showCourseSelection() {
-		_showRoute<Null>((_) => new CourseSelector(widget.azuchath));
+		_showRoute<Null>((_) => new CourseSelector(azuchath));
+	}
+
+	void showExamDetails(Exam exam) {
+		_showRoute<Null>((_) => new ExamDetailScreen(azuchath, exam));
 	}
 
 	Future<T> _showRoute<T>(WidgetBuilder builder) {
@@ -113,7 +118,7 @@ class _HUSState extends State<HUSScaffold> {
 		}
 	}
 
-	Future _onRefreshSwipe() async => await widget.azuchath.syncWithServer();
+	Future _onRefreshSwipe() async => await azuchath.syncWithServer();
 
 	Future startSync() {
 		var refreshState = _refreshIndicatorKey.currentState;
@@ -207,7 +212,7 @@ class _HUSState extends State<HUSScaffold> {
 			case _ContentPage.HOMEWORK:
 				return _wrapAroundRefresher(new HomeworkOverview(widget.azuchath));
 			case _ContentPage.EXAMS:
-				return _wrapAroundRefresher(new Text("Wird in einem zukünftigen Update hinzugefügt."));
+				return _wrapAroundRefresher(new ExamsOverview(widget.azuchath));
 			case _ContentPage.BULLETINS:
 				return new BulletinScreen(widget.azuchath);
 		}
@@ -216,7 +221,7 @@ class _HUSState extends State<HUSScaffold> {
 	}
 
 	Widget _createFAB() {
-		if (primaryScreen && (_currentPage == _ContentPage.LESSONS || _currentPage == _ContentPage.HOMEWORK ||_currentPage == _ContentPage.EXAMS)) {
+		if (primaryScreen && (_currentPage == _ContentPage.LESSONS || _currentPage == _ContentPage.HOMEWORK)) {
 			return new FloatingActionButton(
 				child: const Icon(Icons.add),
 				onPressed: showCreateHomework,
@@ -248,11 +253,11 @@ class _HUSState extends State<HUSScaffold> {
 						_createItem("Hausaufgaben", Icons.assignment, _ContentPage.HOMEWORK),
 						_createItem("Klausuren", Icons.edit, _ContentPage.EXAMS),
 						_createItem("Aushänge", Icons.content_copy, _ContentPage.BULLETINS),
-						new Divider(),
+/*						new Divider(),
 
 						new DrawerSubHeader("Kommunikation (unvollständig)"),
-						new DrawerItem("Benachrichtigung", Icons.send, null),
-						new DrawerItem("Informationskarte", Icons.info_outline, null)
+						new DrawerItem("Nachrichten", Icons.send, null),
+						new DrawerItem("Informationskarte", Icons.info_outline, null) */
 					],
 				),
 			)

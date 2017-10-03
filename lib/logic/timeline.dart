@@ -30,14 +30,15 @@ class DaySeparator extends TimelineEntry {
 
 class LessonEntry extends TimelineEntry {
 
-	bool substitution;
-	bool removed;
+	bool substitution = false;
+	bool removed = false;
 	Teacher teacher;
 
 	ChangedData<Course> course;
 	ChangedData<String> room;
 
 	String message;
+	Exam exam;
 
 	LessonEntry.fromRegularLesson(LessonTime start, LessonTime end, Lesson l) : super(start, end) {
 		substitution = false;
@@ -232,6 +233,7 @@ class TimelinePopulator {
 
 		_findHolidayDurations();
 		_findSubstitutions();
+		_findExams();
 		_fillRest(days);
 
 		_finishAggregation();
@@ -271,6 +273,60 @@ class TimelinePopulator {
 			var dur = new _TimelineDuration(_TimelineDuration.TYPE_INTERRUPTION, sub.start, sub.end);
 			dur.entries.add(new LessonEntry.fromSubstitution(sub));
 			durations.add(dur);
+		}
+	}
+
+	void _findExams() {
+		for (var exam in source.data.data.exams) {
+			if (currentTime.isAfter(exam.end))
+				continue;
+
+			bool attached = false;
+			//Is there a substitution covering this exact duration. If so, attach this
+			//exam to that substitution's entry
+			for (var dur in durations) {
+				if (dur.entries.length != 1)
+					continue;
+
+				if (!(dur.entries.first is LessonEntry))
+					continue;
+
+				if (dur.start.sameTimeAs(exam.start) && dur.end.sameTimeAs(exam.end)) {
+					LessonEntry entry = dur.entries.first;
+					entry.exam = exam;
+					attached = true;
+					break;
+				}
+			}
+
+			if (!attached) {
+				//Ok, looks like we'll need to create another entry. In order to find
+				//teacher and room, we query all regular lessons during the time the
+				//exam will be written, find the one with the same course, and steal its
+				//data.
+				var dur = new _TimelineDuration(_TimelineDuration.TYPE_INTERRUPTION, exam.start, exam.end);
+				List<TimelineEntry> regularEntries = _findRegularLessons(dur, lessonsOnly: true);
+
+				for (var entry in regularEntries) {
+					if (!(entry is LessonEntry))
+						continue;
+
+					LessonEntry lesson = entry;
+					if (lesson.course.current == exam.course) {
+						var result = new LessonEntry(exam.start, exam.end);
+						result.course = lesson.course;
+						result.room = lesson.room;
+						result.teacher = lesson.teacher;
+						result.exam = exam;
+						dur.entries.add(result);
+						break;
+					}
+				}
+
+				if (dur.entries.isNotEmpty)
+					durations.add(dur);
+				//TODO Find solution for exams being written without correlating lesson
+			}
 		}
 	}
 
@@ -388,7 +444,7 @@ class TimelinePopulator {
 		for (var i = 0; i < copy.length; i++) {
 			var entry = copy[i];
 
-			if (entry is LessonEntry) {
+			if (entry is LessonEntry && !entry.removed) {
 				var old = current;
 				current = entry;
 
@@ -409,7 +465,7 @@ class TimelinePopulator {
 		}
 	}
 
-	List<TimelineEntry> _findRegularLessons(_TimelineDuration dur) {
+	List<TimelineEntry> _findRegularLessons(_TimelineDuration dur, {bool lessonsOnly: false}) {
 		var lessons = new List<TimelineEntry>();
 		bool done = false;
 		var consecutiveFails = 0;
@@ -462,30 +518,35 @@ class TimelinePopulator {
 			}
 		}
 
-		var finishedLessons = new List<TimelineEntry>();
 		//Add time information
-		for (var lesson in lessons) {
-			var start = lesson.start;
-			var end = lesson.end;
+		if (!lessonsOnly) {
+			var finishedLessons = new List<TimelineEntry>();
+			//TODO Better search supporting all hours, not just during lessons
+			for (var lesson in lessons) {
+				var start = lesson.start;
+				var end = lesson.end;
 
-			var hours = allHoursBetween(start, end, allHours, inclusive: true);
+				var hours = allHoursBetween(start, end, allHours, inclusive: true);
 
-			for (var info in infoEntries) {
-				if (info.included)
-					continue;
+				for (var info in infoEntries) {
+					if (info.included)
+						continue;
 
-				for (var hour in hours) {
-					if (info.info.start.isBefore(hour, true) && info.info.end.isAfter(hour, true)) {
-						finishedLessons.add(new TimeInformationEntry(info.info));
-						info.included = true;
-						break;
+					for (var hour in hours) {
+						if (info.info.start.isBefore(hour, true) && info.info.end.isAfter(hour, true)) {
+							finishedLessons.add(new TimeInformationEntry(info.info));
+							info.included = true;
+							break;
+						}
 					}
 				}
+
+				finishedLessons.add(lesson);
 			}
 
-			finishedLessons.add(lesson);
+			return finishedLessons;
+		} else {
+			return lessons;
 		}
-
-		return finishedLessons;
 	}
 }

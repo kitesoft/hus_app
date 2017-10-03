@@ -60,7 +60,7 @@ class _SettingsState extends State<SettingsScreen> {
 					child: const Text("ÜBER DIE APP", style: const TextStyle(color: Colors.red)),
 					onPressed: () => showAboutDialog(
 						context: context,
-						applicationVersion: "2.2.2 (217)",
+						applicationVersion: "2.3 (220)",
 						applicationName: "HUS App",
 						applicationIcon:
 						new Container(

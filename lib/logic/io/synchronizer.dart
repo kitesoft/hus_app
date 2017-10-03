@@ -88,6 +88,8 @@ class Synchronizer {
 		//Add forced elements
 		if (_azu.data.homeworkEdited)
 			targets.add(SyncTargetType.HOMEWORK);
+		if (_azu.data.examsEdited)
+			targets.add(SyncTargetType.EXAMS);
 
 		if (targets.contains(SyncTargetType.BASE_DATA)) {
 			targets.add(SyncTargetType.TIMETABLE);
@@ -247,6 +249,18 @@ class Synchronizer {
 	}
 
 	Future _syncExams() async {
-		_log("Skip, not yet implemented");
+		var topicsLearningChanged = new List<ExamTopic>();
+		for (var exam in storage.exams) {
+			topicsLearningChanged.addAll(exam.topics.where((t) => t.learningChanged));
+		}
+
+		await _azu.api.updateExamLearning(topicsLearningChanged);
+
+		var res = await _azu.api.fetchExams(storage);
+		if (res.success) {
+			storage.exams = res.exams;
+			_azu.data.examsEdited = false;
+			_log("Done with exams");
+		}
 	}
 }
