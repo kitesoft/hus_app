@@ -8,7 +8,7 @@ class PublicUserInfo {
 	String displayName;
 	bool verified = false;
 
-	PublicUserInfo(this.id, this.displayName);
+	PublicUserInfo(this.id, this.displayName, {this.verified});
 
 	PublicUserInfo.fromUser(AuthenticatedUser user) : this(user.id, user.name);
 

@@ -47,10 +47,9 @@ class CourseSelection extends StatelessWidget {
 								new Text(_getCourseDetailName(course), style: smallText(context))
 							]
 						)
-						),
-						onPressed: () => selectCourse(course, context),
+					),
+					onPressed: () => selectCourse(course, context),
 				)
-
 			);
 		}
 

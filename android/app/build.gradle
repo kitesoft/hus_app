@@ -30,7 +30,7 @@ android {
         applicationId "de.humboldtschule_hg.app.ng"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 220
+        versionCode 221
         versionName "2.3"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"

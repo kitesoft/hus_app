@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:azuchath_flutter/logic/azuchath.dart';
+import 'package:azuchath_flutter/logic/data/messages.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/ui/editor/manage_content.dart';
 import 'package:azuchath_flutter/ui/pages/bulletins.dart';
+import 'package:azuchath_flutter/ui/pages/chat_content.dart';
+import 'package:azuchath_flutter/ui/pages/chat_overview.dart';
 import 'package:azuchath_flutter/ui/pages/exams.dart';
 import 'package:azuchath_flutter/ui/pages/homework_overview.dart';
 import 'package:azuchath_flutter/ui/pages/timeline_lesson.dart';
@@ -13,11 +16,16 @@ import 'package:azuchath_flutter/ui/settings/settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
+const bool _FORCE_IOS = false;
+
 enum _ContentPage {
-	LESSONS, HOMEWORK, EXAMS, BULLETINS
+	LESSONS, HOMEWORK, EXAMS, BULLETINS, MESSAGES
 }
 
 class HUSScaffold extends StatefulWidget {
+
+	//TODO iOS Design won't show the CupertinoAppBar for some reason, disabling
+	static bool isIos() => /*Platform.isIOS || _FORCE_IOS*/ false;
 
 	final Azuchath azuchath;
 
@@ -43,7 +51,7 @@ class _HUSState extends State<HUSScaffold> {
 
 	StreamSubscription listener;
 
-	bool get useIos => Platform.isIOS;
+	bool get useIos => HUSScaffold.isIos();
 	bool get primaryScreen => widget.content == null;
 	String get title => widget.title ?? "HUS";
 	Azuchath get azuchath => widget.azuchath;
@@ -100,6 +108,10 @@ class _HUSState extends State<HUSScaffold> {
 
 	void showExamDetails(Exam exam) {
 		_showRoute<Null>((_) => new ExamDetailScreen(azuchath, exam));
+	}
+
+	void showConversation(Conversation conversation) {
+		_showRoute<Null>((_) => new ConversationMessages(azuchath, conversation));
 	}
 
 	Future<T> _showRoute<T>(WidgetBuilder builder) {
@@ -215,6 +227,8 @@ class _HUSState extends State<HUSScaffold> {
 				return _wrapAroundRefresher(new ExamsOverview(widget.azuchath));
 			case _ContentPage.BULLETINS:
 				return new BulletinScreen(widget.azuchath);
+			case _ContentPage.MESSAGES:
+				return new ConversationOverview(widget.azuchath);
 		}
 
 		return new Text("Coming soon?");
@@ -253,11 +267,10 @@ class _HUSState extends State<HUSScaffold> {
 						_createItem("Hausaufgaben", Icons.assignment, _ContentPage.HOMEWORK),
 						_createItem("Klausuren", Icons.edit, _ContentPage.EXAMS),
 						_createItem("Aushänge", Icons.content_copy, _ContentPage.BULLETINS),
-/*						new Divider(),
+						new Divider(),
 
-						new DrawerSubHeader("Kommunikation (unvollständig)"),
-						new DrawerItem("Nachrichten", Icons.send, null),
-						new DrawerItem("Informationskarte", Icons.info_outline, null) */
+						new DrawerSubHeader("Kommunikation"),
+						_createItem("Nachrichten (Beta)", Icons.send, _ContentPage.MESSAGES),
 					],
 				),
 			)
@@ -323,5 +336,17 @@ class DrawerSubHeader extends StatelessWidget {
 			alignment: FractionalOffset.centerLeft,
 			child: new Text(content, style: new TextStyle(fontSize: 14.0, color: Colors.black54, fontWeight: FontWeight.w500))
 		);
+  }
+}
+
+class HUSLoadingIndicator extends StatelessWidget {
+
+  @override
+  Widget build(BuildContext context) {
+  	if (HUSScaffold.isIos()) {
+			return new CupertinoActivityIndicator();
+		} else {
+  		return new CircularProgressIndicator();
+		}
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:azuchath_flutter/logic/data/messages.dart';
 import 'package:azuchath_flutter/logic/io/apiclient.dart';
 import 'package:azuchath_flutter/logic/data/manager.dart';
 import 'package:azuchath_flutter/logic/io/firebase.dart';
@@ -18,6 +19,7 @@ class Azuchath {
 	DataManager data;
 	ApiClient api;
 	LocalPreferences preferences;
+	MessageManager messages;
 
 	Timeline timeline;
 	MinuteChangeListener _timeChangeListener;
@@ -55,10 +57,18 @@ class Azuchath {
 		api = new ApiClient(this);
 		firebase = new FirebaseManager(this);
 		await firebase.init();
+		messages = new MessageManager(this);
+		await messages.initLocal();
+		connectWithChat();
+	}
+
+	void connectWithChat() {
+		messages.startConnecting();
 	}
 
 	Future tearDown() async {
 		await _controller.close();
+		await messages.closeStream();
 	}
 
 	Future syncWithServer([bool full = false]) {
@@ -79,7 +89,6 @@ class Azuchath {
 			loader.build(21);
 			timeline = loader.result;
 		} else {
-			print("Starting to migrate timeline (no new data available)");
 			var updater = new TimelineChanger(this);
 			updater.updateTimeline();
 			timeline = updater.result;
@@ -87,6 +96,7 @@ class Azuchath {
 	}
 
 	void onAppInBackground() {
+		messages.close();
 		data.saveIfDirty();
 
 		if (_timeChangeListener.isRunning())
@@ -94,6 +104,9 @@ class Azuchath {
 	}
 
 	void onAppInForeground() {
+		if (!messages.connected)
+			messages.initLocal().then((_) => messages.startConnecting());
+
 		if (!_timeChangeListener.isRunning() && timelineReady)
 			_timeChangeListener.start();
 	}

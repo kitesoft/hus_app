@@ -1,5 +1,6 @@
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/auth.dart';
+import 'package:azuchath_flutter/logic/data/lessons.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/ui/pages/timeline_lesson.dart';
 import 'package:azuchath_flutter/ui/ui_core.dart';
@@ -20,10 +21,19 @@ class ExamsOverview extends StatefulWidget {
 
 class _ExamsOverviewState extends State<ExamsOverview> {
 
-	List<Exam> get exams => widget._azuchath.data.data.exams;
+	List<Exam> get examsFuture {
+		var data = widget._azuchath.data.data;
+
+		var all = data.exams;
+		var now = new LessonTime.findForDate(new DateTime.now(), data.schoolHours);
+
+		return all.where((ex) => ex.end.isAfter(now, true)).toList();
+	}
 
   @override
   Widget build(BuildContext context) {
+		var exams = this.examsFuture;
+
   	if (exams.isEmpty) {
   		var mainColor = Colors.black38;
   		var highlightColor = Colors.black54;
@@ -35,14 +45,13 @@ class _ExamsOverviewState extends State<ExamsOverview> {
 			  	children: [
 			  		new Icon(Icons.mode_edit, size: 50.0, color: mainColor,),
 						new Text(
-							"keine Klausuren",
+							"Keine Klausuren",
 							textAlign: TextAlign.center,
 							style: Theme.of(context).textTheme.display1.copyWith(color: highlightColor),
 						),
 						new Text(
-							"Dieser Klausurenplaner wird gerade getestet und steht "
-							"bald auch für dich zur Verfügung. Bitte habe noch einen "
-							"Moment Geduld.",
+							"Der Klausurenplaner wird schrittweise für alle Klassen eingeführt. "
+							"Bitte habe noch einen Moment Geduld.",
 							textAlign: TextAlign.center, style: new TextStyle(color: mainColor),
 						),
 			  	],

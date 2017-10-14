@@ -277,7 +277,7 @@ class HomeworkState extends State<HomeworkOverview> {
 					new Container(
 						margin: const EdgeInsets.all(8.0),
 						child: new Text(
-							"Bereits erledigt (${completeCount})",
+							"Bereits erledigt ($completeCount)",
 							style: Theme.of(context).textTheme.display1.copyWith(fontSize: 20.0),
 						)
 					)

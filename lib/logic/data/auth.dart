@@ -1,5 +1,6 @@
 import 'package:azuchath_flutter/logic/data/lessons.dart';
 import 'package:azuchath_flutter/logic/data/manager.dart';
+import 'package:azuchath_flutter/logic/data/usercontent.dart';
 
 enum AccountType {
 	STUDENT,
@@ -49,6 +50,8 @@ class AuthenticatedUser {
 	List<Course> subscription;
 
 	AuthenticatedUser(this.id, this.name, this.type, this.subscription);
+
+	PublicUserInfo toPublicInfo() => new PublicUserInfo(id, name, verified: verified);
 
 	AuthenticatedUser.fromData(Map map, DataStorage storage, [bool alwaysRef = false]) {
 		id = map["id"];
