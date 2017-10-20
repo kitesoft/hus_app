@@ -62,6 +62,7 @@ class _ExamsOverviewState extends State<ExamsOverview> {
 		bool isTeacher = widget._azuchath.data.data.session.user.type == AccountType.TEACHER;
 
   	return new ListView.builder(
+			primary: true,
 			itemBuilder: (context, i) =>
 				new ExamCard(exams[i], showForTeacher: isTeacher),
 			itemCount: exams.length,

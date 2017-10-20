@@ -162,6 +162,7 @@ class BulletinState extends State<BulletinScreen> {
 		}
 
 		return new ListView(
+			primary: true,
 			children: children,
 		);
 	}

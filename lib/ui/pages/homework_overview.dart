@@ -299,6 +299,7 @@ class HomeworkState extends State<HomeworkOverview> {
 		//A ListView causes some items to disappear for reasons I don't understand,
 		//this acts as an ugly workaround.
 		return new SingleChildScrollView(
+			primary: true,
 			child: new Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: widgets

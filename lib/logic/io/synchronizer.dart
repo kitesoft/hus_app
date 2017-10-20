@@ -55,7 +55,9 @@ class Synchronizer {
 
 		if (success) {
 			_log("Overriding local data");
+			storage.lastRefresh = new DateTime.now();
 			_azu.data.data = storage;
+
 			await _azu.data.io.writeData();
 			_azu.fireDataLoaded(new DataLoadedEvent());
 		} else {
@@ -129,7 +131,6 @@ class Synchronizer {
 		}
 		if (targets.contains(SyncTargetType.EXAMS)) {
 			toSync.add(SyncTargetType.EXAMS);
-			//TODO Fetch exams
 		}
 
 		_log("Found ${toSync.length} elements to sync: $toSync");

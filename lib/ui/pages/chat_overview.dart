@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:azuchath_flutter/logic/azuchath.dart';
+import 'package:azuchath_flutter/logic/data/auth.dart';
 import 'package:azuchath_flutter/logic/data/messages.dart';
 import 'package:azuchath_flutter/logic/io/message_socket.dart';
 import 'package:azuchath_flutter/ui/ui_core.dart';
@@ -18,8 +19,8 @@ class ConversationOverview extends StatefulWidget {
 		var conv = _messages.conversations.toList(growable: false);
 		//Sort by last message id, descending
 		conv.sort((c1, c2) {
-			var id1 = _messages.lastMessage[c1]?.id ?? 0;
-			var id2 = _messages.lastMessage[c2]?.id ?? 0;
+			var id1 = _messages.conversationMeta[c1]?.lastMessage?.id ?? 0;
+			var id2 = _messages.conversationMeta[c2]?.lastMessage?.id ?? 0;
 
 			return -id1.compareTo(id2);
 		});
@@ -40,7 +41,7 @@ class _ConversationOverviewState extends State<ConversationOverview> {
 	@override
 	void initState() {
 		super.initState();
-		msgChangeListener = widget._messages.incomingMessageStream.listen((_) {
+		msgChangeListener = widget._messages.dataChangedStream.listen((_) {
 			setState(() {});
 		});
 	}
@@ -64,10 +65,14 @@ class _ConversationOverviewState extends State<ConversationOverview> {
 	@override
 	Widget build(BuildContext context) {
 		var convs = widget.conversations;
-		var myUserId = widget._azu.data.data.session.user.id;
+		var user = widget._azu.data.data.session.user;
+		var myUserId = user.id;
+		var isTeacher = user.type == AccountType.TEACHER;
+
+		Widget content;
 
 		if (convs.isEmpty) {
-			return new Center(
+			content = new Center(
 				child: new Column(
 					mainAxisSize: MainAxisSize.max,
 					mainAxisAlignment: MainAxisAlignment.center,
@@ -86,25 +91,25 @@ class _ConversationOverviewState extends State<ConversationOverview> {
 					],
 				),
 			);
-		}
+		} else {
+			//Every second item will be a divider. We don't need one after the last
+			//entry, so we would have 2n-1 elements with dividers at index n = 1, 3, 5
+			content = new ListView.builder(
+				padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0).copyWith(bottom: 0.0),
+				itemCount: convs.length * 2 - 1,
+				itemBuilder: (context, i) {
+					if (i % 2 == 1) {
+						return const Divider();
+					}
 
-		//Every second item will be a divider. We don't need one after the last
-		//entry, so we would have 2n-1 elements with dividers at index n = 1, 3, 5
-		var list = new ListView.builder(
-			padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0).copyWith(bottom: 0.0),
-			itemCount: convs.length * 2 - 1,
-			itemBuilder: (context, i) {
-				if (i % 2 == 1) {
-					return const Divider();
+					var c = convs[i ~/ 2];
+					var m = widget._messages.conversationMeta[c];
+					var sentByMe = myUserId == m?.lastMessage?.sender?.id;
+
+					return new ConversationHeader(c, m, () => _showConversation(c), sentByMe, isTeacher);
 				}
-
-				var c = convs[i ~/ 2];
-				var m = widget._messages.lastMessage[c];
-				var sentByMe = myUserId == m?.sender?.id;
-
-				return new ConversationHeader(c, m, () => _showConversation(c), sentByMe);
-			}
-		);
+			);
+		}
 
 		bool hasError = widget._messages.currentError != null;
 		if (hasError) {
@@ -112,12 +117,12 @@ class _ConversationOverviewState extends State<ConversationOverview> {
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
 					new _ChatErrorInfo(widget._messages.currentError, _tryReconnect),
-					new Expanded(child: list),
+					new Expanded(child: content),
 				]
 			);
 		}
 
-		return list;
+		return content;
 	}
 
 }
@@ -125,37 +130,52 @@ class _ConversationOverviewState extends State<ConversationOverview> {
 class ConversationHeader extends StatelessWidget {
 
 	final Conversation conversation;
-	final TextMessage lastMessage;
+	final ConversationMetaInfo meta;
+
+	TextMessage get lastMessage => meta?.lastMessage;
+	int get unreadMessagesCount => meta?.unreadMessages ?? 0;
+
 	final bool lastMsgSentByMe;
+	final bool showForTeacher;
 
 	final VoidCallback onClick;
 
-	ConversationHeader(this.conversation, this.lastMessage, this.onClick, [this.lastMsgSentByMe = false]);
+	ConversationHeader(this.conversation, this.meta, this.onClick, [this.lastMsgSentByMe = false, this.showForTeacher = false]);
 
-	Widget _createTitle(BuildContext context) {
+	Row _createTitle(BuildContext context) {
 		var mainStyle = new TextStyle(color: Colors.black, fontSize: 18.0, fontWeight: FontWeight.w500);
 
-		if (conversation.title != null) {
-			return new Text(conversation.title, style: mainStyle);
-		} else {
-			//TODO Display form info for teachers
-			return new Row(
-				crossAxisAlignment: CrossAxisAlignment.baseline,
-				textBaseline: TextBaseline.alphabetic,
-				children: [
-					new Text(conversation.course.displayName, style: mainStyle),
-					new Text("(Kurs)", style: smallText(context)),
-				],
-			);
+		var courseDesc = "(Kurs)";
+		if (showForTeacher && conversation.course != null) {
+			courseDesc = "(Kurs mit ${conversation.course.formName ?? "mehreren"})";
 		}
+
+		var children = <Widget>[];
+
+		if (conversation.isBroadcast) {
+			children.add(new Icon(Icons.drafts, color: Colors.green,));
+		}
+		if (conversation.title != null) {
+			children.add(new Text(conversation.title, style: mainStyle));
+		} else {
+			children.add(new Text(conversation.course.displayName, style: mainStyle));
+			children.add(new Text(courseDesc, style: smallText(context)));
+		}
+
+		return new Row(
+			crossAxisAlignment: CrossAxisAlignment.end,
+			textBaseline: TextBaseline.alphabetic,
+			children: children,
+		);
 	}
 
 	Widget _lastMsgRow(BuildContext context) {
 		var lastAuthor = lastMsgSentByMe ? "Du" : lastMessage.sender.displayName;
 		var lastContent = lastMessage.content;
 
-		var color = lastMsgSentByMe ? Colors.green :
-			Colors.blue;
+		//We don't use the color of this sender for the specific conversation so that
+		//the same sender will always have the same color in this overview.
+		var color = MessageUtils.colorForSender(lastMessage.sender);
 
 		return new Row(
 			children: [
@@ -175,22 +195,53 @@ class ConversationHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  	var rows = <Widget> [
-  		_createTitle(context)
-		];
+		var topRow = _createTitle(context);
 
+		var rows = <Widget> [topRow];
 		rows.add(new Container(height: 4.0)); //spacing
 
   	if (lastMessage != null) {
   		rows.add(_lastMsgRow(context));
 		} else {
   		rows.add(
-				new Center(
-				  child: new Text(
-				  	"Noch keine Nachrichten",
-				  	style: smallText(context).copyWith(fontStyle: FontStyle.italic)
-				  ),
-				)
+				new Row(
+				  children: [
+						new Container(width: 4.0),
+				    new Text(
+				    	"Noch keine Nachrichten",
+				    	style: smallText(context).copyWith(fontStyle: FontStyle.italic)
+				    ),
+				  ],
+				),
+			);
+		}
+
+		Widget mainContent = new Column(
+			crossAxisAlignment: CrossAxisAlignment.start,
+			children: rows,
+		);
+
+
+  	if (unreadMessagesCount > 0) {
+  		mainContent = new Stack(
+				children: [
+					mainContent,
+					new Positioned(
+						top: 0.0, right: 0.0,
+						child: new Container(
+							alignment: Alignment.center,
+							padding: const EdgeInsets.all(6.0),
+							decoration: new BoxDecoration(
+								color: Theme.of(context).primaryColor,
+								shape: BoxShape.circle,
+							),
+							child: new Text(
+								"$unreadMessagesCount",
+								style: new TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.0),
+							),
+						)
+					)
+				],
 			);
 		}
 
@@ -198,10 +249,7 @@ class ConversationHeader extends StatelessWidget {
 			type: MaterialType.canvas,
 			child: new InkWell(
 				onTap: onClick,
-				child: new Column(
-					crossAxisAlignment: CrossAxisAlignment.start,
-					children: rows
-				),
+				child: mainContent,
 			),
 		);
   }

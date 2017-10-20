@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/ui/login_greeter.dart';
 import 'package:azuchath_flutter/ui/ui_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 const String FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSen2rs-uOwnPoepPOtkpp5yH3mQEdz_g_UBFoV0dOJkdH-OLQ/viewform?usp=sf_link";
 const String GITHUB_URL = "https://github.com/simolus3/hus_app";
@@ -10,7 +13,23 @@ const String RESET_PW_URL = "https://husnews.tutorialfactory.org/newsystem/login
 
 void main() {
 	var azu = new Azuchath();
+
+	/*
+	We need this onFrame callback to scroll to the end of listviews, as there is
+	not apparent way to achieve this provided by the framework. This uses a
+	horrible hack further explained in ui/pages/chat_content.dart.
+	We don't need to close the controller as it will be active during the entire
+	app session.
+	 */
+	// ignore: close_sinks
+	var frameController = new StreamController<Duration>.broadcast();
+	azu.onNewFrame = frameController.stream;
+
 	runApp(new AzuchathApp(azu));
+
+	SchedulerBinding.instance.addPersistentFrameCallback((d) {
+		frameController.add(d);
+	});
 }
 
 class AzuchathApp extends StatefulWidget {
@@ -65,9 +84,10 @@ class AppState extends State<AzuchathApp> with WidgetsBindingObserver {
 
 		return new MaterialApp(
 			title: 'HUS App',
+			supportedLocales: const [const Locale("de", "DE")],
 			theme: new ThemeData(
-					primaryColor: Colors.deepOrangeAccent,
-					accentColor: Colors.indigo
+				primaryColor: Colors.deepOrangeAccent,
+				accentColor: Colors.indigo
 			),
 			home: new HUSScaffold(azu),
 		);

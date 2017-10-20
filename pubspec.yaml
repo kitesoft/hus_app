@@ -5,6 +5,7 @@ dependencies:
   tuple:
   firebase_messaging: ^0.0.4
   path_provider:
+  package_info: "^0.0.1"
   url_launcher:
   sqflite: any
   flutter:

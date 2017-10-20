@@ -174,7 +174,9 @@ class Exam {
 	}
 
 	double calcLearningProgress() {
-		//TODO This needs to be better
+		if (topics.isEmpty)
+			return 1.0;
+
 		var sum = 0.0;
 
 		for (var topic in topics) {

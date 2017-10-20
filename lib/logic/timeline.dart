@@ -325,7 +325,13 @@ class TimelinePopulator {
 
 				if (dur.entries.isNotEmpty)
 					durations.add(dur);
-				//TODO Find solution for exams being written without correlating lesson
+
+				/* Exams being written at a time where the course does not have any
+					 substitutions / regular lessons will not be shown in the timeline.
+					 This might seem problematic, but I consider this to be a really rare
+					 case not worth dealing with. They will still be shown in the exams
+					 overview page.
+				*/
 			}
 		}
 	}
@@ -434,39 +440,54 @@ class TimelinePopulator {
 	}
 
 	void _addFreePeriodMarkers(List<TimelineEntry> entries) {
+		bool breaksFreeTime(TimelineEntry entry) {
+			if (entry is LessonEntry)
+				return !entry.removed;
+			if (entry is TimeInformationEntry) {
+				return entry.entry.type.interruptsLesson();
+			}
+
+			return false;
+		}
+
+		//Iterate through all entries, keeping a reference to the last one. If there
+		//some hours between two entries, insert a free period marker between them
 		LessonEntry current;
-		//TODO deal with timeentries between lessons
 
 		var hours = source.data.data.schoolHours;
 		var amountInserted = 0;
 
 		var copy = new List<TimelineEntry>.from(entries);
+
 		for (var i = 0; i < copy.length; i++) {
 			var entry = copy[i];
 
-			if (entry is LessonEntry && !entry.removed) {
+			if (breaksFreeTime(entry)) {
 				var old = current;
 				current = entry;
 
 				if (old == null)
 					continue;
 
-				var betweenStart = old.end.nextTime(hours);
-				var betweenEnd = current.start.previousTime(hours);
+				//Add / subtract one hour so we only have the time not involved in this entry
+				var endOfOld = old.end.nextTime(hours);
+				var startOfCurrent = current.start.previousTime(hours);
 
-				if (!betweenStart.isBefore(betweenEnd, true))
+				if (!endOfOld.isBefore(startOfCurrent, true)) //no hours in between
 					continue;
-				if (betweenStart.date != betweenEnd.date
-						|| old.end.date != current.start.date)
+				if (endOfOld.date != startOfCurrent.date
+						|| old.end.date != current.start.date) { //different date, ignore
+					old = null;
 					continue;
+				}
 
-				entries.insert(i + (amountInserted++), new FreePeriodEntry(betweenStart, betweenEnd));
+				entries.insert(i + (amountInserted++), new FreePeriodEntry(endOfOld, startOfCurrent));
 			}
 		}
 	}
 
 	List<TimelineEntry> _findRegularLessons(_TimelineDuration dur, {bool lessonsOnly: false}) {
-		var lessons = new List<TimelineEntry>();
+		var lessons = new List<LessonEntry>();
 		bool done = false;
 		var consecutiveFails = 0;
 
@@ -520,20 +541,37 @@ class TimelinePopulator {
 
 		//Add time information
 		if (!lessonsOnly) {
+			/*
+			Add time information entries at their correct location. We iterate through
+			every lesson, keeping track of the previous one. For every lesson found,
+			get a set of hours between the start of the first one and the end of the
+			current lesson. Find all time entries between those hours and add them.
+			 */
+
 			var finishedLessons = new List<TimelineEntry>();
-			//TODO Better search supporting all hours, not just during lessons
+
+			var lastLesson;
 			for (var lesson in lessons) {
-				var start = lesson.start;
-				var end = lesson.end;
+				var currentLesson = lesson;
 
-				var hours = allHoursBetween(start, end, allHours, inclusive: true);
+				var startTime = lastLesson?.start ?? dur.start;
+				var endTime = currentLesson?.end;
 
+				var hours = allHoursBetween(startTime, endTime, allHours, inclusive: true);
+				var addLessonBeforeTimeEntry = false;
+				
 				for (var info in infoEntries) {
 					if (info.included)
 						continue;
 
 					for (var hour in hours) {
 						if (info.info.start.isBefore(hour, true) && info.info.end.isAfter(hour, true)) {
+							//entry after the last lesson
+							if (info.info.start.isBefore(lesson.end, false)) {
+								finishedLessons.add(currentLesson);
+								addLessonBeforeTimeEntry = true;
+							}
+							
 							finishedLessons.add(new TimeInformationEntry(info.info));
 							info.included = true;
 							break;
@@ -541,12 +579,14 @@ class TimelinePopulator {
 					}
 				}
 
-				finishedLessons.add(lesson);
+				if (!addLessonBeforeTimeEntry)
+					finishedLessons.add(currentLesson);
+				lastLesson = currentLesson;
 			}
 
 			return finishedLessons;
 		} else {
-			return lessons;
+			return new List<TimelineEntry>.from(lessons);
 		}
 	}
 }

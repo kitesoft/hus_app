@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/messages.dart';
@@ -139,26 +138,26 @@ class _HUSState extends State<HUSScaffold> {
 
 	PopupMenuButton _buildPopupMenu(BuildContext ctx) {
 		return new PopupMenuButton(
-				onSelected: (v) {
-					switch (v) {
-						case 0: //Settings
-							showSettings();
-							break;
-						case 1: //Refresh
-							startSync();
-							break;
-					}
-				},
-				itemBuilder: (ctx) => [
-					const PopupMenuItem(
-							value: 0,
-							child: const Text("Einstellungen")
-					),
-					const PopupMenuItem(
-							value: 1,
-							child: const Text("Aktualisieren")
-					)
-				]
+			onSelected: (v) {
+				switch (v) {
+					case 0: //Settings
+						showSettings();
+						break;
+					case 1: //Refresh
+						startSync();
+						break;
+				}
+			},
+			itemBuilder: (ctx) => [
+				const PopupMenuItem(
+					value: 0,
+					child: const Text("Einstellungen")
+				),
+				const PopupMenuItem(
+					value: 1,
+					child: const Text("Aktualisieren")
+				)
+			]
 		);
 	}
 
@@ -246,13 +245,16 @@ class _HUSState extends State<HUSScaffold> {
 		return null;
 	}
 
-	DrawerItem _createItem(String content, IconData icon, _ContentPage page)
-		=> new DrawerItem(content, icon, _changeContentFunction(page, context), selected: _currentPage == page);
+	DrawerItem _createItem(String content, IconData icon, _ContentPage page, {String badge})
+		=> new DrawerItem(content, icon, _changeContentFunction(page, context), selected: _currentPage == page, badge: badge);
 
   @override
   Widget build(BuildContext context) {
 		var body =  primaryScreen ? _createContent() : widget.content;
 		var appBar = _createAppBar(context);
+
+		var unread = azuchath.messages.unreadMessages;
+		var unreadMessagesStr = unread == 0 ? null : unread.toString();
 
 		var drawer = new Drawer(
 			child: new Container(
@@ -270,7 +272,7 @@ class _HUSState extends State<HUSScaffold> {
 						new Divider(),
 
 						new DrawerSubHeader("Kommunikation"),
-						_createItem("Nachrichten (Beta)", Icons.send, _ContentPage.MESSAGES),
+						_createItem("Nachrichten", Icons.send, _ContentPage.MESSAGES, badge: unreadMessagesStr),
 					],
 				),
 			)
@@ -296,11 +298,33 @@ class DrawerItem extends StatelessWidget {
 	final bool selected;
 	final VoidCallback onClick;
 
-	DrawerItem(this.title, this.icon, this.onClick, {this.selected = false});
+	final String badge;
+
+	DrawerItem(this.title, this.icon, this.onClick, {this.selected = false, this.badge});
 
   @override
   Widget build(BuildContext context) {
-  	var selectedColor = Theme.of(context).primaryColor;
+		var selectedColor = Theme.of(context).primaryColor;
+
+  	var content = <Widget> [
+			new Container(margin: const EdgeInsets.only(right: 16.0),),
+			new Icon(icon, size: 24.0, color: selected ? selectedColor : Colors.black54),
+			new Container(margin: const EdgeInsets.only(right: 16.0),),
+			new Text(title, style: new TextStyle(fontSize: 14.0, color: selected ? selectedColor : Colors.black87, fontWeight: FontWeight.w500)),
+		];
+
+  	if (badge != null) {
+  		content.addAll([
+				new Expanded(child: new Container()),
+				new Chip(
+					labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+					backgroundColor: Colors.orange,
+					label: new Text(badge)
+				),
+				new Container(width: 16.0, height: 0.0),
+			]);
+		}
+
   	return new Container(
 			height: 48.0,
 		  child: new Material(
@@ -308,13 +332,8 @@ class DrawerItem extends StatelessWidget {
 		  	child: new InkWell(
 					onTap: onClick,
 		  	  child: new Row(
-		  	  	mainAxisSize: MainAxisSize.min,
-		  	  	children: [
-		  	  		new Container(margin: const EdgeInsets.only(right: 16.0),),
-		  	  		new Icon(icon, size: 24.0, color: selected ? selectedColor : Colors.black54),
-		  	  		new Container(margin: const EdgeInsets.only(right: 16.0),),
-		  	  		new Text(title, style: new TextStyle(fontSize: 14.0, color: selected ? selectedColor : Colors.black87, fontWeight: FontWeight.w500)),
-		  	  	],
+		  	  	mainAxisSize: MainAxisSize.max,
+		  	  	children: content
 		  	  ),
 		  	)
 		  ),

@@ -19,7 +19,8 @@ class MessageError {
 
 class MessageSocket {
 
-	static const String CONNECTION_STR = "ws://192.168.2.106:8080/stream";
+	//TODO Change to wss://chatapi.tutorialfactory.org/stream
+	static const String CONNECTION_STR = "ws://185.101.92.85:1111/stream";
 
 	WebSocket socket;
 	StreamSubscription subscription;
@@ -28,8 +29,7 @@ class MessageSocket {
 	HandshakeState state = HandshakeState.CONNECTING;
 	bool currentlySending = false;
 
-
-	bool debug = true;
+	bool debug = false;
 
 	MessageSocket(this.messages);
 
@@ -48,8 +48,10 @@ class MessageSocket {
 			_startHandshake();
 		} catch (e, s) {
 			print("Could not connect with server (io)");
-			print(e);
-			print(s);
+			if (debug) {
+				print(e);
+				print(s);
+			}
 
 			closeWithError(new MessageError("Konnte nicht mit Server verbinden", true));
 		}
@@ -81,7 +83,8 @@ class MessageSocket {
 				if (c.lastMetaUpdate > lastConversationUpdate)
 					lastConversationUpdate = c.lastMetaUpdate;
 
-				var lastMsgIdOfConv = messages.lastMessage.containsKey(c) ? messages.lastMessage[c].id : 0;
+				//TODO conversation meta only respects text messages, will have to update in future
+				var lastMsgIdOfConv = messages.conversationMeta[c]?.lastMessage?.id ?? 0;
 				if (lastMsgIdOfConv > lastMessageId)
 					lastMessageId = lastMsgIdOfConv;
 			}
@@ -133,6 +136,7 @@ class MessageSocket {
 			String title = conv["title"];
 			int courseId = conv["course"];
 			int lastUpdate = conv["last_update"];
+			bool broadcast = conv["is_broadcast"];
 
 			var participants = new List<ConversationParticipant>();
 			for (var p in conv["participants"]) {
@@ -148,8 +152,9 @@ class MessageSocket {
 				found.title = title;
 				found.course = course;
 				found.lastMetaUpdate = lastUpdate;
+				found.isBroadcast = broadcast;
 			} else {
-				found = new Conversation(id, title, course, lastMetaUpdate: lastUpdate);
+				found = new Conversation(id, title, course, lastMetaUpdate: lastUpdate, isBroadcast: broadcast);
 			}
 
 			found.participants = participants;
@@ -170,7 +175,7 @@ class MessageSocket {
 		}
 
 		if (updatedConversations.isNotEmpty || foundMessages.isNotEmpty)
-			messages.broadcastUpdate();
+			messages.broadcastUpdate(newMessages: foundMessages);
 	}
 
 	Future _handleIncomingMessage(Map data) async {
@@ -180,7 +185,7 @@ class MessageSocket {
 		if (m != null)
 			await messages.writeIncomingMessage(m);
 
-		messages.broadcastUpdate();
+		messages.broadcastUpdate(newMessages: [m]);
 	}
 
 	Future sendBacklog() async {
@@ -213,6 +218,9 @@ class MessageSocket {
 
 		var conversation = messages.findConversationById(convId);
 		var sender = messages.findParticipant(conversation, senderId);
+
+		if (conversation == null || sender == null)
+			return null;
 
 		switch (data["type"]) {
 			case 2: //chat message

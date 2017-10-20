@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/auth.dart';
 import 'package:azuchath_flutter/logic/data/lessons.dart';
 import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/logic/io/message_socket.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:tuple/tuple.dart';
@@ -18,20 +20,29 @@ class MessageManager {
 	Database database;
 
 	List<Conversation> conversations;
-	Map<Conversation, TextMessage> lastMessage = new Map<Conversation, TextMessage>();
+	Map<Conversation, ConversationMetaInfo> conversationMeta = new Map<Conversation, ConversationMetaInfo>();
+	int get unreadMessages => conversationMeta.values.fold(0, (sum, c) => sum + c.unreadMessages);
+
 	List<SendBacklogEntry> sendBacklog;
 
 	MessageError currentError;
 	bool get connected => currentError == null && socket.state != HandshakeState.ERROR;
 
-	Stream<Null> incomingMessageStream;
-	StreamController<Null> _streamController;
+	Stream<Null> get dataChangedStream => _dataController.stream;
+	StreamController<Null> _dataController;
+	Stream<Message> get incomingMessagesStream => _msgController.stream;
+	StreamController<Message> _msgController;
+
+	Future<File> get dbFile async {
+		var dir = await getApplicationDocumentsDirectory();
+		return new File("${dir.path}/hus_chat.db");
+	}
 
 	MessageManager(this.azu) {
 		socket = new MessageSocket(this);
 
-		_streamController = new StreamController<Null>.broadcast();
-		incomingMessageStream = _streamController.stream;
+		_dataController = new StreamController<Null>.broadcast();
+		_msgController = new StreamController<Message>.broadcast();
 	}
 
 	Conversation findConversationById(int id) {
@@ -52,13 +63,11 @@ class MessageManager {
 			close();
 		}
 
-		var dir = await getApplicationDocumentsDirectory();
-		var file = new File("${dir.path}/hus_chat.db");
-
 		Completer comp = new Completer();
 
-		await openDatabase(file.path, version: 4,
+		await openDatabase((await dbFile).path, version: 2,
 			onCreate: (Database db, int version) {
+				azu.handleMessageDbCreation();
 				_handleDbChange(db, 0);
 			},
 			onUpgrade: (Database db, int oldVersion, int newVersion) {
@@ -80,6 +89,8 @@ class MessageManager {
 	}
 
 	Future _handleDbChange(Database db, int oldVersion) async {
+		print("Upgrading database from version $oldVersion");
+
 		if (oldVersion < 1) {
 			//Create table known_users, storing info of users encountered
 			await db.execute("""
@@ -94,7 +105,8 @@ CREATE TABLE conversations (
 	id INT NOT NULL PRIMARY KEY,
 	title VARCHAR(255) NULL,
 	associated_course INT NULL,
-	last_meta_update INT NOT NULL
+	last_meta_update INT NOT NULL,
+	is_broadcast BOOLEAN NOT NULL DEFAULT FALSE
 )
 			""");
 			await db.execute("""
@@ -120,8 +132,6 @@ CREATE TABLE messages (
 	FOREIGN KEY (sender) REFERENCES known_users(id)
 )
 			""");
-		}
-		if (oldVersion < 4) {
 			await db.execute(""" 
 CREATE TABLE sending_backlog (
 	id INT NOT NULL PRIMARY KEY,
@@ -132,6 +142,10 @@ CREATE TABLE sending_backlog (
 	FOREIGN KEY(conversation) REFERENCES conversations(id)
 )
 			""");
+		}
+
+		if (oldVersion < 2) {
+			await db.execute("ALTER TABLE conversations ADD COLUMN last_read_message INT NOT NULL DEFAULT 0");
 		}
 	}
 
@@ -147,9 +161,10 @@ CREATE TABLE sending_backlog (
 			String title = row["title"];
 			int courseId = row["associated_course"];
 			int lastMetaUpdate = row["last_meta_update"];
+			bool broadcast = row["is_broadcast"] == 1;
 
 			var course = courseId != null ? azu.data.data.getCourseById(courseId) : null;
-			conversations.add(new Conversation(id, title, course, lastMetaUpdate: lastMetaUpdate));
+			conversations.add(new Conversation(id, title, course, lastMetaUpdate: lastMetaUpdate, isBroadcast: broadcast));
 		}
 
 		//Load participants for each conversation
@@ -176,16 +191,48 @@ WHERE p.conversation = ?
 		}
 
 		this.conversations = conversations;
-		this.lastMessage.clear();
+		this.conversationMeta.clear();
 
+		await _readConvMeta();
+		await _readBacklog();
+	}
+
+	///Read amount of unread messages and last messages
+	Future _readConvMeta() async {
 		//For each conversation, select the latest message for a conversation overview
-		var latestMsgResult = await database.rawQuery("SELECT * FROM messages m WHERE m.id = (SELECT MAX(id) FROM messages WHERE msg_type = 2 GROUP BY conversation)");
+		var lastMessage = new Map<Conversation, TextMessage>();
+
+		var latestMsgResult = await database.rawQuery("SELECT * FROM messages m WHERE m.id IN (SELECT MAX(id) FROM messages WHERE msg_type = 2 GROUP BY conversation)");
 		for (var row in latestMsgResult) {
-			var msg = _parseMessageFromDbRow(row);
+			TextMessage msg = _parseMessageFromDbRow(row);
 			if (msg != null)
 				lastMessage[msg.conversation] = msg;
 		}
 
+		//For each conversation, find the amount of unread messages
+		var amountUnread = new Map<Conversation, int>();
+		var query = """
+SELECT COUNT(m.id) AS unread, c.id AS conversation FROM conversations c
+	LEFT OUTER JOIN messages m ON m.conversation = c.id AND m.id > c.last_read_message
+GROUP BY m.conversation
+		""";
+		var result = await database.rawQuery(query);
+		for (var row in result) {
+			var conversation = findConversationById(row["conversation"]);
+			var unread = row["unread"];
+
+			amountUnread[conversation] = unread;
+		}
+
+		for (var c in conversations) {
+			var msg = lastMessage[c];
+			var unread = amountUnread[c] ?? 0;
+
+			conversationMeta[c] = new ConversationMetaInfo(unread, msg);
+		}
+	}
+
+	Future _readBacklog() async {
 		var backlogResult = await database.query("sending_backlog");
 		this.sendBacklog = new List<SendBacklogEntry>();
 		for (var row in backlogResult) {
@@ -250,6 +297,8 @@ WHERE p.conversation = ?
 	}
 
 	Future writeIncomingMessage(Message msg) async {
+		conversationMeta[msg.conversation]?.unreadMessages++;
+
 		const sql = """
 INSERT OR IGNORE INTO messages (id, conversation, sender, sent_at, msg_type, content)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -260,7 +309,7 @@ VALUES (?, ?, ?, ?, ?, ?)
 
 		await database.rawInsert(sql, [msg.id, msg.conversation.id, msg.sender.id, sentAt, meta.item1, meta.item2]);
 		if (msg is TextMessage)
-			lastMessage[msg.conversation] = msg;
+			conversationMeta[msg.conversation].lastMessage = msg;
 	}
 
 	Future writeConversationMeta(List<int> allIds, List<Conversation> updated) async {
@@ -279,7 +328,6 @@ VALUES (?, ?, ?, ?, ?, ?)
 
 				var localConv = conversations.firstWhere((c) => c.id == r);
 				conversations.remove(localConv);
-				lastMessage.remove(localConv);
 			}
 			for (var a in addedIds) {
 				//Find associated conversation, which has to be in updated
@@ -287,7 +335,7 @@ VALUES (?, ?, ?, ?, ?, ?)
 
 				await database.insert("conversations", {
 					"id": conv.id, "title": conv.title, "associated_course": conv.course?.id,
-					"last_meta_update": conv.lastMetaUpdate,
+					"last_meta_update": conv.lastMetaUpdate, "is_broadcast": conv.isBroadcast ? 1 : 0
 				});
 				await _writeParticipants(conv);
 				conversations.add(conv);
@@ -302,6 +350,9 @@ VALUES (?, ?, ?, ?, ?, ?)
 				await _writeParticipants(u);
 			}
 		});
+
+		await _readConvMeta();
+		await _readBacklog(); //Might have changed if a conversation has been deleted
 	}
 
 	Future _writeParticipants(Conversation conv) async {
@@ -341,11 +392,24 @@ VALUES (?, ?, ?)
 		}
 	}
 
+	Future markConversationAsRead(Conversation conv) async {
+		var query = "UPDATE conversations SET last_read_message = coalesce((SELECT MAX(id) FROM messages WHERE conversation = ?), 0) WHERE id = ?";
+
+		await database.execute(query, [conv.id, conv.id]);
+		conversationMeta[conv]?.unreadMessages = 0;
+	}
+
 	Future deleteFromBacklog(int id) {
 		return database.delete("sending_backlog", where: "id = ?", whereArgs: [id]);
 	}
 
-	void broadcastUpdate() => _streamController.add(null);
+	void broadcastUpdate({List<Message> newMessages}) {
+	  _dataController.add(null);
+
+	  if (newMessages != null) {
+	  	newMessages.forEach(_msgController.add);
+		}
+	}
 
 	void close() {
 		socket?.close();
@@ -353,9 +417,25 @@ VALUES (?, ?, ?)
 		database = null;
 	}
 
-	Future closeStream() {
-		return _streamController.close();
+	void deleteLocalData() {
+		close();
+		closeStream();
+		dbFile.then((f) => f.delete());
 	}
+
+	Future closeStream() async {
+		await _dataController.close();
+		await _msgController.close();
+	}
+}
+
+class ConversationMetaInfo {
+
+	int unreadMessages;
+	TextMessage lastMessage;
+
+	ConversationMetaInfo(this.unreadMessages, this.lastMessage);
+
 }
 
 class ConversationParticipant {
@@ -375,10 +455,11 @@ class Conversation {
 	List<ConversationParticipant> participants = [];
 
 	int lastMetaUpdate;
+	bool isBroadcast;
 
 	String get displayTitle => title ?? course.displayName;
 
-	Conversation(this.id, this.title, this.course, {this.lastMetaUpdate});
+	Conversation(this.id, this.title, this.course, {this.lastMetaUpdate, this.isBroadcast});
 }
 
 class SendBacklogEntry {
@@ -422,5 +503,35 @@ class TextMessage extends Message {
 	final bool isBacklog; //Not sent yet, just local
 
   TextMessage(int id, Conversation conversation, PublicUserInfo sender, DateTime sentAt, this.content, {this.isBacklog = false}) : super(id, conversation, sender, sentAt);
+
+}
+
+class MessageUtils {
+
+	static Color colorForSender(PublicUserInfo sender, {Conversation inConversation}) {
+		const colors = const [
+			Colors.blue,
+			Colors.red,
+			Colors.green,
+			Colors.yellow,
+			Colors.purple,
+			Colors.teal,
+			Colors.orange,
+		];
+		Color getForIndex(int i) {
+			return colors[i % colors.length];
+		}
+
+		if (inConversation != null) {
+			for (var i = 0; i < inConversation.participants.length; i++) {
+				var p = inConversation.participants[i];
+
+				if (p.user.id == sender.id)
+					return getForIndex(i);
+			}
+		}
+
+		return getForIndex(sender.id);
+	}
 
 }

@@ -11,24 +11,45 @@ import 'package:flutter/material.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:package_info/package_info.dart' as package_info;
+
 class SettingsScreen extends StatefulWidget {
   final Azuchath _azu;
 
   SettingsScreen(this._azu);
 
   @override
-  State<StatefulWidget> createState() => new _SettingsState(this._azu);
+  State<StatefulWidget> createState() => new _SettingsState();
 }
 
 class _SettingsState extends State<SettingsScreen> {
-  final Azuchath _azu;
 
-  _SettingsState(this._azu);
+	Azuchath get _azu => widget._azu;
+
+  String appVersion = "??";
+
+  @override
+	void initState() {
+  	super.initState();
+
+		var loadState = () async {
+			String versionName = await package_info.version;
+			String versionCode = await package_info.buildNumber;
+
+			setState(() {
+				appVersion = "$versionName ($versionCode)";
+			});
+		};
+
+		loadState();
+	}
+
 
   Future logOut(BuildContext ctx) async {
     await _azu.api.logout();
 
 		_azu.data.data = new DataStorage.empty();
+		_azu.messages.deleteLocalData();
 		await _azu.data.io.writeData();
 
 		Navigator.pop(ctx);
@@ -60,7 +81,7 @@ class _SettingsState extends State<SettingsScreen> {
 					child: const Text("ÜBER DIE APP", style: const TextStyle(color: Colors.red)),
 					onPressed: () => showAboutDialog(
 						context: context,
-						applicationVersion: "2.3 (221)",
+						applicationVersion: appVersion,
 						applicationName: "HUS App",
 						applicationIcon:
 						new Container(

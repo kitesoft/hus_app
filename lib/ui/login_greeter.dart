@@ -75,15 +75,17 @@ class _GreeterState extends State<Greeter> {
 				finishWithSession(res.session);
 			} else {
 				//TODO Check if this actually is an auth error
-				showLoading = false;
-				showError = "Mit der Kombination aus Nutzernamen und Passwort ist keine Anmeldung möglich";
-				setState(() {});
+				setState(() {
+					showLoading = false;
+					showError = "Mit der Kombination aus Nutzernamen und Passwort ist keine Anmeldung möglich";
+				});
 			}
 		}
 		, onError: (e) {
-			showLoading = false;
-			showError = "Beim Anmelden ist ein Fehler aufgetreten. Bitte versuche es später erneut";
-			setState(() {});
+			setState(() {
+				showLoading = false;
+				showError = "Beim Anmelden ist ein Fehler aufgetreten. Bitte versuche es später erneut";
+			});
 		});
 	}
 

@@ -99,6 +99,8 @@ class DatabaseManager {
 
 		if (data.containsKey("session"))
 			storage.session = new Session.fromData(data["session"], storage, true);
+		if (data.containsKey("last_refresh"))
+			storage.lastRefresh = new DateTime.fromMillisecondsSinceEpoch(data["last_refresh"]);
 
 		if (data.containsKey("local_homework_changes"))
 			source.homeworkEdited = data["local_homework_changes"];
@@ -123,6 +125,7 @@ class DatabaseManager {
 
 		data["local_homework_changes"] = source.homeworkEdited;
 		data["local_exam_changes"] = source.examsEdited;
+		data["last_refresh"] = source.data.lastRefresh.millisecondsSinceEpoch;
 
 		var json = JSON.encode(data);
 		await file.writeAsString(json, mode: FileMode.WRITE);
@@ -134,6 +137,7 @@ class DatabaseManager {
 class DataStorage {
 
 	Session session;
+	DateTime lastRefresh;
 
 	List<Week> weeks;
 	List<LessonHour> schoolHours;
@@ -152,6 +156,7 @@ class DataStorage {
 
 	DataStorage.empty() {
 		session = null;
+		lastRefresh = new DateTime.fromMillisecondsSinceEpoch(0);
 		weeks = new List<Week>();
 		schoolHours = new List<LessonHour>();
 		teachers = new List<Teacher>();
@@ -165,6 +170,7 @@ class DataStorage {
 
 	DataStorage.copyFrom(DataStorage other) {
 		session = other.session;
+		lastRefresh = other.lastRefresh;
 		weeks = new List<Week>.from(other.weeks);
 		schoolHours = new List<LessonHour>.from(other.schoolHours);
 		teachers = new List<Teacher>.from(other.teachers);

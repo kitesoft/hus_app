@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:azuchath_flutter/logic/data/messages.dart';
 import 'package:azuchath_flutter/logic/io/apiclient.dart';
@@ -10,6 +11,12 @@ import 'package:azuchath_flutter/logic/timeline.dart';
 import 'package:azuchath_flutter/utils.dart';
 
 class Azuchath {
+
+	///If the last refresh lays further behind than this duration, the app will
+	///try to refresh the data available automatically.
+	static const Duration _NO_REFRESH_MAX = const Duration(hours: 5);
+
+	Stream<Duration> onNewFrame; //ui stuff, see main and chat_content for detail
 
 	Stream<DataLoadedEvent> onDataLoaded;
 	StreamController<DataLoadedEvent> _controller;
@@ -62,6 +69,22 @@ class Azuchath {
 		connectWithChat();
 	}
 
+	///When the chat-client creates it message database, request push-notifications
+	///from the user because on iOS, the introduction of chat comes with the same
+	///version as push-notifications
+	void handleMessageDbCreation() {
+		if (Platform.isIOS && data.isLoggedIn)
+			firebase.requestMsgPerms();
+	}
+
+	void _checkRefreshAutomatically() {
+		var delta = new DateTime.now().difference(data.data.lastRefresh);
+		if (delta >= _NO_REFRESH_MAX && data.data.session != null) {
+			print("Starting refresh automatically");
+			syncWithServer();
+		}
+	}
+
 	void connectWithChat() {
 		messages.startConnecting();
 	}
@@ -104,6 +127,8 @@ class Azuchath {
 	}
 
 	void onAppInForeground() {
+		_checkRefreshAutomatically();
+
 		if (!messages.connected)
 			messages.initLocal().then((_) => messages.startConnecting());
 
