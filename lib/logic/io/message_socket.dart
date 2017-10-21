@@ -20,7 +20,7 @@ class MessageError {
 class MessageSocket {
 
 	//TODO Change to wss://chatapi.tutorialfactory.org/stream
-	static const String CONNECTION_STR = "ws://185.101.92.85:1111/stream";
+	static const String CONNECTION_STR = "wss://chatapi.tutorialfactory.org/stream";
 
 	WebSocket socket;
 	StreamSubscription subscription;
@@ -42,8 +42,7 @@ class MessageSocket {
 			subscription = socket.listen(_onMessage, onDone: () {
 				if (debug)
 					print("WebSocket closed");
-				messages.currentError = new MessageError("Verbindung unerwartet geschlossen", true);
-				close();
+				closeWithError(new MessageError("Verbindung unerwartet geschlossen", true));
 			});
 			_startHandshake();
 		} catch (e, s) {

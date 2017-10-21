@@ -4,11 +4,11 @@ import 'dart:math';
 import 'package:azuchath_flutter/logic/azuchath.dart';
 import 'package:azuchath_flutter/logic/data/lessons.dart';
 import 'package:azuchath_flutter/logic/data/messages.dart';
-import 'package:azuchath_flutter/logic/data/usercontent.dart';
 import 'package:azuchath_flutter/ui/ui_core.dart';
 import 'package:azuchath_flutter/ui/ui_utils.dart';
 import 'package:azuchath_flutter/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 typedef void _SendCallback(String msg);
@@ -59,6 +59,7 @@ class _ConversationState extends State<ConversationMessages> {
 	StreamSubscription<Duration> _startFrame;
 
 	bool shouldScrollToBottom = true;
+	bool scrollAfterStateChange = false;
 	double lastExtend;
 
 	@override
@@ -168,6 +169,10 @@ class _ConversationState extends State<ConversationMessages> {
 			);
 		}
 
+		if (scrollAfterStateChange) {
+			SchedulerBinding.instance.addPostFrameCallback((_) => shouldScrollToBottom = true);
+		}
+
     return new HUSScaffold(
 			widget.azu,
 			title: widget.conversation.displayTitle,
@@ -224,8 +229,15 @@ class _ConversationState extends State<ConversationMessages> {
 	}
 
 	void sendMessage(String text) {
+		scrollAfterStateChange = true;
+
 		msgLogic.sendMessage(text, widget.conversation)
-				.then((_) => setState(() {})); //state change happened by sending a message
+			.then((_) {
+				//state change happened by sending a message
+				scrollAfterStateChange = true;
+				_loadMessages();
+			}
+		);
 	}
 }
 

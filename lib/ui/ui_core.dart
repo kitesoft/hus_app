@@ -12,8 +12,8 @@ import 'package:azuchath_flutter/ui/pages/homework_overview.dart';
 import 'package:azuchath_flutter/ui/pages/timeline_lesson.dart';
 import 'package:azuchath_flutter/ui/settings/course_selection.dart';
 import 'package:azuchath_flutter/ui/settings/settings_ui.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 const bool _FORCE_IOS = false;
 
@@ -48,7 +48,8 @@ class _HUSState extends State<HUSScaffold> {
 	final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = new GlobalKey
 		<RefreshIndicatorState>();
 
-	StreamSubscription listener;
+	StreamSubscription dataChangeSubscription;
+	StreamSubscription messagesChangeSubscription;
 
 	bool get useIos => HUSScaffold.isIos();
 	bool get primaryScreen => widget.content == null;
@@ -61,12 +62,14 @@ class _HUSState extends State<HUSScaffold> {
 	void initState() {
 		super.initState();
 
-		listener = azuchath.onDataLoaded.listen(_onDataLoaded);
+		dataChangeSubscription = azuchath.onDataLoaded.listen(_onDataLoaded);
+		messagesChangeSubscription = azuchath.messages.dataChangedStream.listen((_) => _onMessagesChanged());
 	}
 
 	@override
 	void dispose() {
-		listener.cancel();
+		dataChangeSubscription?.cancel();
+		messagesChangeSubscription?.cancel();
 
 		super.dispose();
 	}
@@ -83,6 +86,10 @@ class _HUSState extends State<HUSScaffold> {
 				)
 			);
 		}
+	}
+
+	void _onMessagesChanged() {
+		setState(() {});
 	}
 
 	Future showEditHomework(Homework toEdit) async {

@@ -452,7 +452,7 @@ class TimelinePopulator {
 
 		//Iterate through all entries, keeping a reference to the last one. If there
 		//some hours between two entries, insert a free period marker between them
-		LessonEntry current;
+		TimelineEntry current;
 
 		var hours = source.data.data.schoolHours;
 		var amountInserted = 0;
