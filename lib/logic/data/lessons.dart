@@ -27,23 +27,31 @@ class Week {
 		//without starting in the future.
 		var ref;
 		var deltaWeeks;
-		for (var av in weekRefs) {
-			if (av.start.date.isAfter(monday)) //No future weeks allowed
-				continue;
+		bool future = false;
 
+		for (var av in weekRefs) {
 			var avDelta = monday.difference(av.start.date).inDays ~/ 7;
 			if (deltaWeeks != null ? avDelta < deltaWeeks : true) {
 				ref = av;
 				deltaWeeks = avDelta;
+
+				future = av.start.date.isAfter(monday);
 			}
 		}
 
 		var weekIndex = weeks.firstWhere((w) => w.name == ref.name).sequence;
 
 		var changeInWeeks = deltaWeeks % weeks.length;
-		weekIndex += changeInWeeks;
-		if (weekIndex > weeks.length - 1)
-			weekIndex -= weeks.length;
+
+		if (future) {
+			weekIndex -= changeInWeeks;
+			if (weekIndex < 0)
+				weekIndex += weeks.length;
+		} else {
+			weekIndex += changeInWeeks;
+			if (weekIndex > weeks.length - 1)
+				weekIndex -= weeks.length;
+		}
 
 		return weeks[weekIndex];
 	}
