@@ -21,7 +21,7 @@ class _CourseGroup {
 
 	Course findSelected(_CourseSelectionData s) {
 		for (var c in entries) {
-			if (s.selected.contains(c))
+			if (s.visibleSelected.contains(c))
 				return c;
 		}
 
@@ -86,8 +86,14 @@ class _CourseSelectionData {
 	int maxGroupIndex = 0;
 	bool currentlyNoSelected = false;
 
-
+	List<Course> previouslySelected = new List<Course>();
 	List<Course> selected = new List<Course>();
+
+	Set<Course> get visibleSelected {
+		var set = new Set<Course>.from(previouslySelected);
+		set.addAll(selected);
+		return set;
+	}
 
 	String error;
 
@@ -187,7 +193,7 @@ class CourseSelectionState extends State<CourseSelector> {
 		selector = new _CourseSelectionData();
 
 		if (existingSubscription != null && existingSubscription.isNotEmpty) {
-			selector.selected = existingSubscription;
+			selector.previouslySelected = existingSubscription;
 		}
 
 		handleStepChanged();
@@ -388,7 +394,7 @@ class CourseSelectionState extends State<CourseSelector> {
 						child: new CheckboxListTile(
 							title: _buildForCourse(course),
 							dense: true,
-							value: selector.selected.contains(course),
+							value: selector.visibleSelected.contains(course),
 							onChanged: (c) => onCourseMultiSelected(course, c)
 						)
 					)

@@ -3,6 +3,7 @@ description: A new flutter project.
 
 dependencies:
   tuple:
+  intl:
   firebase_messaging: ^0.0.4
   path_provider:
   package_info: "^0.0.1"

@@ -170,6 +170,7 @@ class _ConversationState extends State<ConversationMessages> {
 		}
 
 		if (scrollAfterStateChange) {
+			scrollAfterStateChange = false;
 			SchedulerBinding.instance.addPostFrameCallback((_) => shouldScrollToBottom = true);
 		}
 

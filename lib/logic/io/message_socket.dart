@@ -19,7 +19,6 @@ class MessageError {
 
 class MessageSocket {
 
-	//TODO Change to wss://chatapi.tutorialfactory.org/stream
 	static const String CONNECTION_STR = "wss://chatapi.tutorialfactory.org/stream";
 
 	WebSocket socket;

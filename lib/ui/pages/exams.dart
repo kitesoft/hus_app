@@ -230,14 +230,18 @@ class _ExamDetailState extends State<ExamDetailScreen> {
 	}
 
 	TableRow buildTopicRow(ExamTopic topic) {
+		var rows = <Text>[
+			new Text(topic.content, style: const TextStyle(fontSize: 16.0)),
+		];
+		if (topic.explanation != null) {
+			rows.add(new Text(topic.explanation, style: smallText(context)));
+		}
+
 		return new TableRow(
 			children: [
 				new Column(
 					crossAxisAlignment: CrossAxisAlignment.start,
-					children: [
-						new Text(topic.content, style: const TextStyle(fontSize: 16.0)),
-						new Text(topic.explanation, style: smallText(context))
-					],
+					children: rows
 				),
 				buildLearningButtons(topic)
 			]

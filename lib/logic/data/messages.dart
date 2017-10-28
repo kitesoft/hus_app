@@ -343,7 +343,7 @@ VALUES (?, ?, ?, ?, ?, ?)
 
 			for (var u in updatedOnly) {
 				await database.update("conversations", {
-					"title": u.title, "associated_course": u.course.id,
+					"title": u.title, "associated_course": u.course?.id,
 					"last_meta_update": u.lastMetaUpdate
 				}, where: "id = ?", whereArgs: [u.id]);
 

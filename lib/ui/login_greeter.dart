@@ -204,7 +204,7 @@ class _GreeterState extends State<Greeter> {
 		));
 
 		return new MaterialApp(
-			title: "Azuchath",
+			title: "HUS App",
 			theme: new ThemeData(
 				brightness: Brightness.dark,
 			),
